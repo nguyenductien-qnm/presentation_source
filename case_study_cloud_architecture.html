@@ -2087,3 +2087,150 @@
         </div>
     </div>
 </section>
+</main>
+    </div>
+
+    <!-- Navigation HUD (matching noisy_neighbor_cpu_quota.html) -->
+    <div class="deck-controls">
+        <button id="prevBtn" title="Previous slide (Left Arrow)">&larr; Prev</button>
+        <span class="deck-progress" id="deckProgress">1 / 31</span>
+        <button id="nextBtn" title="Next slide (Right Arrow)">Next &rarr;</button>
+    </div>
+
+    <script>
+        class SlidePresentation {
+            constructor() {
+                this.slides = document.querySelectorAll('.slide');
+                this.currentSlide = 0;
+                this.stage = document.getElementById('deckStage');
+                this.progressEl = document.getElementById('deckProgress');
+                this.prevBtn = document.getElementById('prevBtn');
+                this.nextBtn = document.getElementById('nextBtn');
+                
+                this.init();
+            }
+
+            init() {
+                this.setupStageScale();
+                this.setupNavigation();
+                this.initInlineEditor();
+                const hashMatch = window.location.hash.match(/slide-(\d+)/i);
+                const startIdx = hashMatch ? parseInt(hashMatch[1], 10) - 1 : 0;
+                this.showSlide(startIdx, false);
+                window.addEventListener('hashchange', () => {
+                    const match = window.location.hash.match(/slide-(\d+)/i);
+                    if (match) this.showSlide(parseInt(match[1], 10) - 1, false);
+                });
+            }
+
+            setupStageScale() {
+                const scale = () => {
+                    const factor = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+                    const x = (window.innerWidth - 1920 * factor) / 2;
+                    const y = (window.innerHeight - 1080 * factor) / 2;
+                    this.stage.style.transform = `translate(${x}px, ${y}px) scale(${factor})`;
+                };
+                scale();
+                window.addEventListener('resize', scale);
+                window.addEventListener('DOMContentLoaded', scale);
+            }
+
+            setupNavigation() {
+                this.prevBtn.addEventListener('click', () => this.prevSlide());
+                this.nextBtn.addEventListener('click', () => this.nextSlide());
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.target && e.target.getAttribute('contenteditable') === 'true') {
+                        if (e.key === 'Escape') {
+                            e.target.blur();
+                        }
+                        return;
+                    }
+
+                    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+                        e.preventDefault();
+                        this.nextSlide();
+                    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                        e.preventDefault();
+                        this.prevSlide();
+                    } else if (e.key === 'Home') {
+                        this.showSlide(0);
+                    } else if (e.key === 'End') {
+                        this.showSlide(this.slides.length - 1);
+                    }
+                });
+
+                // Debounced Mouse Wheel Navigation
+                let wheelTimeout = null;
+                window.addEventListener('wheel', (e) => {
+                    if (document.querySelector('[contenteditable="true"]:focus')) return;
+                    if (wheelTimeout) return;
+                    wheelTimeout = setTimeout(() => { wheelTimeout = null; }, 350);
+
+                    if (e.deltaY > 30) this.nextSlide();
+                    else if (e.deltaY < -30) this.prevSlide();
+                }, { passive: true });
+
+                // Touch support
+                let startX = 0;
+                document.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+                document.addEventListener('touchend', (e) => {
+                    let diffX = e.changedTouches[0].clientX - startX;
+                    if (diffX < -50) this.nextSlide();
+                    if (diffX > 50) this.prevSlide();
+                }, { passive: true });
+            }
+
+            showSlide(index, updateHash = true) {
+                this.currentSlide = Math.max(0, Math.min(index, this.slides.length - 1));
+                this.slides.forEach((slide, i) => {
+                    const isActive = i === this.currentSlide;
+                    slide.classList.toggle('active', isActive);
+                    slide.classList.toggle('visible', isActive);
+                });
+                this.progressEl.textContent = `${this.currentSlide + 1} / ${this.slides.length}`;
+                if (updateHash) {
+                    history.replaceState(null, null, `#slide-${this.currentSlide + 1}`);
+                }
+            }
+
+            nextSlide() { this.showSlide(this.currentSlide + 1); }
+            prevSlide() { this.showSlide(this.currentSlide - 1); }
+
+            initInlineEditor() {
+                const hotzone = document.querySelector('.edit-hotzone');
+                const editToggle = document.getElementById('editToggle');
+                let isEditing = false;
+                let hideTimeout = null;
+
+                const toggleEditMode = () => {
+                    isEditing = !isEditing;
+                    editToggle.classList.toggle('active', isEditing);
+                    editToggle.textContent = isEditing ? '💾 Save Mode' : '✏️ Edit Mode';
+                    
+                    const editableElements = document.querySelectorAll('h1, h2, p, td, th, div.card-header, div.card-body, div.statement-text, div.statement-sub, div.diagram-step-title, div.diagram-step-desc');
+                    editableElements.forEach(el => {
+                        el.setAttribute('contenteditable', isEditing ? 'true' : 'false');
+                    });
+                };
+
+                hotzone.addEventListener('mouseenter', () => { clearTimeout(hideTimeout); editToggle.classList.add('show'); });
+                hotzone.addEventListener('mouseleave', () => { hideTimeout = setTimeout(() => { if (!isEditing) editToggle.classList.remove('show'); }, 400); });
+                editToggle.addEventListener('mouseenter', () => { clearTimeout(hideTimeout); });
+                editToggle.addEventListener('mouseleave', () => { hideTimeout = setTimeout(() => { if (!isEditing) editToggle.classList.remove('show'); }, 400); });
+                
+                hotzone.addEventListener('click', toggleEditMode);
+                editToggle.addEventListener('click', toggleEditMode);
+
+                document.addEventListener('keydown', (e) => {
+                    if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable')) {
+                        toggleEditMode();
+                    }
+                });
+            }
+        }
+
+        new SlidePresentation();
+    </script>
+</body>
+</html>

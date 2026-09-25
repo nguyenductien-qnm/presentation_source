@@ -1,0 +1,2089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Study: Cloud Architecture — Netflix &amp; Dropbox</title>
+    
+    <!-- Fonts matching noisy_neighbor_cpu_quota.html -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===========================================
+           1. THEME & CUSTOM PROPERTIES
+           =========================================== */
+        :root {
+            --stage-bg: #ffffff;
+            --slide-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --accent-netflix: #e50914;
+            --accent-netflix-glow: rgba(229, 9, 20, 0.08);
+            --accent-amber: #d97706;
+            --accent-amber-glow: rgba(217, 119, 6, 0.08);
+            --accent-coral: #dc2626;
+            --accent-coral-glow: rgba(220, 38, 38, 0.08);
+            --accent-blue: #0284c7;
+            --accent-blue-glow: rgba(2, 132, 199, 0.08);
+            --accent-green: #059669;
+            --accent-green-glow: rgba(5, 150, 105, 0.08);
+            --accent-purple: #8b5cf6;
+            --card-bg: #f8fafc;
+            --card-border: #cbd5e1;
+            --code-bg: #1e293b;
+            
+            --font-head: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+            
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ===========================================
+           2. MANDATORY VIEWPORT BASE STYLES
+           =========================================== */
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: var(--stage-bg);
+            font-family: var(--font-body);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .deck-viewport {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            background: var(--stage-bg);
+        }
+
+        .deck-stage {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            transform-origin: 0 0;
+            background: var(--slide-bg);
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 72px 110px;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            background: var(--slide-bg);
+            transition: opacity 0.4s var(--ease-out);
+        }
+
+        .slide.active,
+        .slide.visible {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 1;
+        }
+
+        /* ===========================================
+           3. LAYOUT & UI COMPONENTS
+           =========================================== */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--card-border);
+            padding-bottom: 20px;
+        }
+
+        .section-tag {
+            font-family: var(--font-body);
+            font-size: 19px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            color: var(--accent-netflix);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-tag::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-netflix);
+            box-shadow: 0 0 10px var(--accent-netflix);
+        }
+
+        .slide-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin: 32px 0;
+            position: relative;
+        }
+
+
+        /* Typography */
+        h1.title-main {
+            font-family: var(--font-head);
+            font-size: 92px;
+            font-weight: 800;
+            line-height: 1.12;
+            letter-spacing: -0.02em;
+            margin-bottom: 24px;
+        }
+
+        h1.title-main span {
+            color: var(--accent-netflix);
+        }
+
+        h2.slide-title {
+            font-family: var(--font-head);
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+            margin-bottom: 30px;
+            color: var(--text-main);
+        }
+
+        h2.slide-title span {
+            color: var(--accent-netflix);
+        }
+
+        p.lead {
+            font-size: 32px;
+            line-height: 1.45;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .highlight-text {
+            color: var(--accent-netflix);
+            font-weight: 700;
+        }
+
+        /* Statement Slide */
+        .statement-box {
+            text-align: center;
+            max-width: 1540px;
+            margin: 0 auto;
+            padding: 50px 60px;
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            width: 100%;
+        }
+
+        .statement-box.netflix-glow {
+            border-color: var(--accent-netflix);
+            background: radial-gradient(circle at center, var(--accent-netflix-glow) 0%, var(--card-bg) 75%);
+        }
+
+        .statement-box.amber-glow {
+            border-color: var(--accent-amber);
+            background: radial-gradient(circle at center, var(--accent-amber-glow) 0%, var(--card-bg) 75%);
+        }
+
+        .statement-box.coral-glow {
+            border-color: var(--accent-coral);
+            background: radial-gradient(circle at center, var(--accent-coral-glow) 0%, var(--card-bg) 75%);
+        }
+
+        .statement-box.blue-glow {
+            border-color: var(--accent-blue);
+            background: radial-gradient(circle at center, var(--accent-blue-glow) 0%, var(--card-bg) 75%);
+        }
+
+        .statement-text {
+            font-family: var(--font-head);
+            font-size: 50px;
+            font-weight: 700;
+            line-height: 1.3;
+            letter-spacing: -0.01em;
+            color: var(--text-main);
+            margin-bottom: 20px;
+        }
+
+        .statement-sub {
+            font-size: 26px;
+            color: var(--text-muted);
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        /* Grid & Cards */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 36px;
+            width: 100%;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            width: 100%;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 34px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card.active-border {
+            border-color: var(--accent-netflix);
+        }
+
+        .card.coral-border {
+            border-color: var(--accent-coral);
+            background: rgba(220, 38, 38, 0.02);
+        }
+
+        .card.blue-border {
+            border-color: var(--accent-blue);
+            background: rgba(2, 132, 199, 0.02);
+        }
+
+        .card.green-border {
+            border-color: var(--accent-green);
+            background: rgba(5, 150, 105, 0.02);
+        }
+
+        .card.amber-border {
+            border-color: var(--accent-amber);
+            background: rgba(217, 119, 6, 0.02);
+        }
+
+        .card-header {
+            font-family: var(--font-head);
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            font-size: 23px;
+            line-height: 1.55;
+            color: var(--text-muted);
+        }
+
+        .card-body strong {
+            color: var(--text-main);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-family: var(--font-code);
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-netflix {
+            background: rgba(229, 9, 20, 0.1);
+            color: var(--accent-netflix);
+            border: 1px solid rgba(229, 9, 20, 0.25);
+        }
+
+        .badge-coral {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--accent-coral);
+            border: 1px solid rgba(220, 38, 38, 0.25);
+        }
+
+        .badge-amber {
+            background: rgba(217, 119, 6, 0.1);
+            color: var(--accent-amber);
+            border: 1px solid rgba(217, 119, 6, 0.25);
+        }
+
+        .badge-blue {
+            background: rgba(2, 132, 199, 0.1);
+            color: var(--accent-blue);
+            border: 1px solid rgba(2, 132, 199, 0.25);
+        }
+
+        .badge-green {
+            background: rgba(5, 150, 105, 0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(5, 150, 105, 0.25);
+        }
+
+        .badge-purple {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-purple);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+        }
+
+        /* Data Tables */
+        table.styled-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+            font-size: 22px;
+        }
+
+        table.styled-table th {
+            background: #f1f5f9;
+            color: var(--accent-netflix);
+            font-family: var(--font-head);
+            font-size: 24px;
+            font-weight: 700;
+            text-align: left;
+            padding: 20px 28px;
+            border-bottom: 2px solid var(--card-border);
+        }
+
+        table.styled-table td {
+            padding: 20px 28px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--card-border);
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
+
+        table.styled-table td strong {
+            color: var(--text-main);
+        }
+
+        table.styled-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Flow / Architecture diagram blocks */
+        .diagram-step {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px 24px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .diagram-step.highlight-coral {
+            border-color: var(--accent-coral);
+            background: rgba(220, 38, 38, 0.04);
+        }
+
+        .diagram-step.highlight-blue {
+            border-color: var(--accent-blue);
+            background: rgba(2, 132, 199, 0.04);
+        }
+
+        .diagram-step.highlight-green {
+            border-color: var(--accent-green);
+            background: rgba(5, 150, 105, 0.04);
+        }
+
+        .diagram-step-title {
+            font-family: var(--font-head);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .diagram-step-desc {
+            font-size: 16px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .arrow-divider {
+            font-size: 26px;
+            font-weight: bold;
+            color: var(--accent-netflix);
+            text-align: center;
+        }
+
+        /* ==========================================
+           APPLE WATCH HONEYCOMB MESH (SLIDE 1)
+           ========================================== */
+        .watch-mesh-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: auto;
+            position: relative;
+            user-select: none;
+        }
+
+        .watch-mesh-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 26px;
+            margin-top: 5px;
+        }
+
+        .watch-mesh-row:first-child {
+            margin-top: 0;
+        }
+
+        .watch-bubble {
+            width: 136px;
+            height: 136px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid rgba(226, 232, 240, 0.95);
+            box-shadow: 0 10px 28px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                        box-shadow 0.32s ease, 
+                        border-color 0.25s ease,
+                        background 0.25s ease;
+            flex-shrink: 0;
+        }
+
+        .watch-bubble img {
+            max-width: 76px;
+            max-height: 58px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.04));
+        }
+
+        .watch-bubble:hover {
+            transform: scale(1.26);
+            z-index: 100;
+            border-color: #ff9900;
+            background: #ffffff;
+            box-shadow: 0 20px 38px -6px rgba(255, 153, 0, 0.25), 0 10px 20px -4px rgba(15, 23, 42, 0.12);
+        }
+
+        .watch-bubble:hover img {
+            transform: scale(1.08);
+        }
+
+        /* Tooltip on hover */
+        .watch-bubble::after {
+            content: attr(data-brand);
+            position: absolute;
+            bottom: -36px;
+            left: 50%;
+            transform: translateX(-50%) translateY(6px);
+            background: #0f172a;
+            color: #ffffff;
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 5px 14px;
+            border-radius: 20px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+                        transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+                        visibility 0.2s;
+            z-index: 200;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+            letter-spacing: 0.2px;
+        }
+
+        .watch-bubble:hover::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Bottom row tooltips display above the bubble */
+        .watch-mesh-row:last-child .watch-bubble::after {
+            bottom: auto;
+            top: -36px;
+            transform: translateX(-50%) translateY(-6px);
+        }
+
+        .watch-mesh-row:last-child .watch-bubble:hover::after {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Reveal Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+        }
+
+        .slide.visible .reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal:nth-child(1) { transition-delay: 0.08s; }
+        .reveal:nth-child(2) { transition-delay: 0.18s; }
+        .reveal:nth-child(3) { transition-delay: 0.28s; }
+        .reveal:nth-child(4) { transition-delay: 0.38s; }
+        .reveal:nth-child(5) { transition-delay: 0.48s; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .reveal {
+                transition: none !important;
+                opacity: 1 !important;
+                transform: none !important;
+            }
+        }
+
+        /* Navigation Controls (Bottom Right Floating Pill) */
+        .deck-controls {
+            position: fixed;
+            bottom: 24px;
+            right: 32px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 8px 18px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .deck-controls button {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-family: var(--font-head);
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 6px 14px;
+            border-radius: 8px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .deck-controls button:hover {
+            background: #e2e8f0;
+            color: var(--accent-netflix);
+        }
+
+        .deck-progress {
+            font-family: var(--font-code);
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* Edit toggle zone */
+        .edit-hotzone {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 80px;
+            height: 80px;
+            z-index: 10000;
+            cursor: pointer;
+        }
+
+        .edit-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--text-main);
+            color: #ffffff;
+            border: 1px solid var(--card-border);
+            padding: 8px 16px;
+            font-family: var(--font-head);
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 10001;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+        }
+
+        .edit-toggle.show,
+        .edit-toggle.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        [contenteditable="true"] {
+            outline: 2px dashed var(--accent-netflix) !important;
+            background: rgba(229, 9, 20, 0.04);
+        }
+
+        /* Print styles */
+        @media print {
+            html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+            .deck-viewport { position: static; overflow: visible; background: #fff; }
+            .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
+            .slide { position: relative; display: block !important; visibility: visible !important; opacity: 1 !important; break-after: page; page-break-after: always; width: 1920px; height: 1080px; }
+            .deck-controls, .edit-hotzone, .edit-toggle { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="edit-hotzone"></div>
+    <button class="edit-toggle" id="editToggle" title="Press 'E' to toggle inline text editing">✏️ Edit Mode</button>
+
+    <div class="deck-viewport">
+        <main class="deck-stage" id="deckStage">
+
+            <!-- ==========================================
+                 SLIDE 7: ARCHITECTURE MIGRATION
+                 ========================================== -->
+            <section class="slide active visible">
+                <div class="slide-header">
+                    <div class="section-tag" style="display: flex; align-items: center; gap: 12px;">
+                        <img src="assets/logos/aws.svg" alt="AWS Logo" style="height: 22px; object-fit: contain;" />
+                        <span>AWS Global Ecosystem</span>
+                    </div>
+                    
+                </div>
+                <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding-top: 10px; padding-bottom: 20px;">
+                    
+
+                    <!-- Apple Watch Honeycomb Mesh Grid -->
+                    <div class="watch-mesh-container reveal">
+                        <!-- Row 1: 4 items -->
+                        <div class="watch-mesh-row">
+                            <div class="watch-bubble" data-brand="Disney+ • Streaming">
+                                <img src="assets/logos/disneyplus.svg" alt="Disney+" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Airbnb • Travel &amp; Stays">
+                                <img src="assets/logos/airbnb.svg" alt="Airbnb" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Spotify • Audio Streaming">
+                                <img src="assets/logos/spotify.svg" alt="Spotify" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Epic Games • Fortnite">
+                                <img src="assets/logos/epicgames.svg" alt="Epic Games" />
+                            </div>
+                        </div>
+
+                        <!-- Row 2: 5 items -->
+                        <div class="watch-mesh-row">
+                            <div class="watch-bubble" data-brand="Slack • Team Collaboration">
+                                <img src="assets/logos/slack.svg" alt="Slack" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Capital One • Enterprise Banking">
+                                <img src="assets/logos/capitalone.svg" alt="Capital One" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Stripe • Global Payments">
+                                <img src="assets/logos/stripe.svg" alt="Stripe" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Samsung • Consumer Electronics">
+                                <img src="assets/logos/samsung.svg" alt="Samsung" />
+                            </div>
+                            <div class="watch-bubble" data-brand="McDonald's • Global Fast Food">
+                                <img src="assets/logos/mcdonalds.svg" alt="McDonald's" />
+                            </div>
+                        </div>
+
+                        <!-- Row 3: 6 items (Widest Center) -->
+                        <div class="watch-mesh-row">
+                            <div class="watch-bubble" data-brand="NASA JPL • Mars Exploration">
+                                <img src="assets/logos/nasa.svg" alt="NASA JPL" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Siemens • Industrial Tech">
+                                <img src="assets/logos/siemens.svg" alt="Siemens" />
+                            </div>
+                            <div class="watch-bubble" data-brand="BMW Group • Connected Mobility">
+                                <img src="assets/logos/bmw.svg" alt="BMW" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Sony • Media &amp; Electronics">
+                                <img src="assets/logos/sony.svg" alt="Sony" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Uber • Mobility &amp; Delivery">
+                                <img src="assets/logos/uber.svg" alt="Uber" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Twitch • Live Streaming">
+                                <img src="assets/logos/twitch.svg" alt="Twitch" />
+                            </div>
+                        </div>
+
+                        <!-- Row 4: 5 items -->
+                        <div class="watch-mesh-row">
+                            <div class="watch-bubble" data-brand="Reddit • Online Communities">
+                                <img src="assets/logos/reddit.svg" alt="Reddit" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Pinterest • Visual Discovery">
+                                <img src="assets/logos/pinterest.svg" alt="Pinterest" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Riot Games • League of Legends">
+                                <img src="assets/logos/riotgames.svg" alt="Riot Games" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Duolingo • Language EdTech">
+                                <img src="assets/logos/duolingo.svg" alt="Duolingo" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Snapchat • Visual Messaging">
+                                <img src="assets/logos/snapchat.svg" alt="Snapchat" />
+                            </div>
+                        </div>
+
+                        <!-- Row 5: 4 items -->
+                        <div class="watch-mesh-row">
+                            <div class="watch-bubble" data-brand="Zoom • Video Conferencing">
+                                <img src="assets/logos/zoom.svg" alt="Zoom" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Coinbase • Crypto Exchange">
+                                <img src="assets/logos/coinbase.svg" alt="Coinbase" />
+                            </div>
+                            <div class="watch-bubble" data-brand="Toyota • Autonomous Mobility">
+                                <img src="assets/logos/toyota.svg" alt="Toyota" />
+                            </div>
+                            <div class="watch-bubble" data-brand="GitHub • Developer Platform">
+                                <img src="assets/logos/github.svg" alt="GitHub" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </section>
+
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 1 — Historical Context</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 28px;">
+            <img src="assets/logos/netflix.svg" alt="Netflix" style="height: 64px; object-fit: contain;" />
+            <h2 class="slide-title reveal" style="font-size: 72px; margin-bottom: 0;">Flagship Case: <span>NETFLIX</span></h2>
+        </div>
+
+        <div class="statement-box netflix-glow reveal" style="max-width: 1200px; padding: 44px 56px; margin: 0 auto 36px; text-align: center;">
+            <div class="statement-text" style="font-size: 40px; line-height: 1.35; margin-bottom: 12px;">
+                Shutting down all physical data centers to go 100% all-in on Cloud.
+            </div>
+            <div class="statement-sub" style="font-size: 24px; color: var(--text-muted);">
+                An 8-year journey (2008 &ndash; 2016) redefining how hyperscale enterprises engineer infrastructure.
+            </div>
+        </div>
+
+        <div class="grid-3 reveal" style="max-width: 1200px; width: 100%; margin: 0 auto;">
+            <div class="card" style="text-align: center; padding: 26px;">
+                <div style="font-family: var(--font-head); font-size: 48px; font-weight: 800; color: var(--accent-netflix); margin-bottom: 6px;">8 Years</div>
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-main);">2008 &ndash; 2016</div>
+                <div style="font-size: 16px; color: var(--text-muted); margin-top: 4px;">Complete Transformation</div>
+            </div>
+
+            <div class="card" style="text-align: center; padding: 26px;">
+                <div style="font-family: var(--font-head); font-size: 48px; font-weight: 800; color: var(--accent-blue); margin-bottom: 6px;">100%</div>
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-main);">Cloud-Native</div>
+                <div style="font-size: 16px; color: var(--text-muted); margin-top: 4px;">Re-architected, No Lift &amp; Shift</div>
+            </div>
+
+            <div class="card" style="text-align: center; padding: 26px;">
+                <div style="font-family: var(--font-head); font-size: 48px; font-weight: 800; color: var(--accent-green); margin-bottom: 6px;">130+</div>
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-main);">Countries</div>
+                <div style="font-size: 16px; color: var(--text-muted); margin-top: 4px;">Global launch in a single day</div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 1 — Historical Context</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 68px; margin-bottom: 0;">
+                2008: <span>Infrastructure Crisis</span>
+            </h2>
+        </div>
+
+        <div class="statement-box coral-glow reveal" style="max-width: 1240px; margin: 0 auto; padding: 32px 48px; text-align: center;">
+            <div class="statement-text" style="font-size: 38px; line-height: 1.35; margin-bottom: 8px;">
+                August 2008: Major database corruption shut down DVD shipping for 3 consecutive days.
+            </div>
+            <div class="statement-sub" style="font-size: 20px; color: var(--text-muted);">
+                The wake-up call: Traditional vertically scaled infrastructure could no longer sustain exponential business growth.
+            </div>
+        </div>
+
+        <div class="grid-3 reveal" style="max-width: 1240px; width: 100%; margin: 0 auto; gap: 24px;">
+            <div class="card coral-border" style="padding: 28px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 44px; font-weight: 800; color: var(--accent-coral); margin-bottom: 4px;">8× &amp; 1,000×</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">Members &amp; Streaming Hours</div>
+                <div style="font-size: 16px; color: var(--text-muted); margin-top: 6px;">Demand surged beyond monolithic database capacity limits.</div>
+            </div>
+
+            <div class="card coral-border" style="padding: 28px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 44px; font-weight: 800; color: var(--accent-coral); margin-bottom: 4px;">3 Days Down</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">Single Point of Failure</div>
+                <div style="font-size: 16px; color: var(--text-muted); margin-top: 6px;">A centralized relational DB crash paralyzed the entire business.</div>
+            </div>
+
+            <div class="card amber-border" style="padding: 28px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 44px; font-weight: 800; color: var(--accent-amber); margin-bottom: 4px;">Months</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">Hardware Procurement</div>
+                <div style="font-size: 16px; color: var(--text-muted); margin-top: 6px;">Physical lead times prevented data centers from racking servers fast enough.</div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 2 — Technical Requirements</div>
+    </div>
+    <div class="slide-body">
+        <h2 class="slide-title reveal">What Did Netflix Need? <span>Cloud Was the Means, Not the Goal</span></h2>
+
+        <div class="grid-3 reveal" style="margin-bottom: 24px;">
+            <div class="card blue-border">
+                <div class="card-header">
+                    <span style="font-size: 26px;">1. Horizontal Scale</span>
+                    <span class="badge badge-blue">Scale</span>
+                </div>
+                <div class="card-body">
+                    Never rely on a single massive machine or database. Scale out seamlessly across countless commodity nodes.
+                </div>
+            </div>
+
+            <div class="card green-border">
+                <div class="card-header">
+                    <span style="font-size: 26px;">2. Distributed System</span>
+                    <span class="badge badge-green">Resilience</span>
+                </div>
+                <div class="card-body">
+                    Failure of an individual component must never bring down the system. Absolute failure domain isolation.
+                </div>
+            </div>
+
+            <div class="card amber-border">
+                <div class="card-header">
+                    <span style="font-size: 26px;">3. Elasticity</span>
+                    <span class="badge badge-amber">Agility</span>
+                </div>
+                <div class="card-body">
+                    Dynamically provision and decommission capacity in minutes based on real-time traffic demand.
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2 reveal">
+            <div class="card blue-border">
+                <div class="card-header">
+                    <span style="font-size: 26px;">4. Global Capacity</span>
+                    <span class="badge badge-blue">Multi-Region</span>
+                </div>
+                <div class="card-body">
+                    Expand infrastructure footprint across multiple continents to serve global users with minimal latency.
+                </div>
+            </div>
+
+            <div class="card active-border">
+                <div class="card-header">
+                    <span style="font-size: 26px;">5. Four Nines Availability</span>
+                    <span class="badge badge-netflix">99.99%</span>
+                </div>
+                <div class="card-body">
+                    Target 99.99% availability by architecting self-healing software on top of inherently unreliable commodity hardware.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 2 — Architectural Decision</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Why AWS? <span>2 Core Criteria</span>
+            </h2>
+        </div>
+
+        <div class="statement-box blue-glow reveal" style="max-width: 1100px; margin: 0 auto; padding: 26px 40px; text-align: center;">
+            <div class="statement-text" style="font-size: 34px; line-height: 1.35;">
+                "AWS provided the <span style="color: var(--accent-blue);">Greatest Scale</span> &amp; <span style="color: var(--accent-green);">Broadest Feature Set</span> at the time of evaluation."
+            </div>
+            <div class="statement-sub" style="font-size: 18px; color: var(--text-muted); margin-top: 6px;">
+                &mdash; Official Statement from Netflix (Cloud Migration Retrospective, 2016)
+            </div>
+        </div>
+
+        <div class="grid-2 reveal" style="max-width: 1100px; width: 100%; margin: 0 auto; gap: 32px;">
+            <div class="card blue-border" style="padding: 36px 32px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 38px; font-weight: 800; color: var(--accent-blue); margin-bottom: 6px;">
+                    Greatest Scale
+                </div>
+                <div style="font-size: 19px; font-weight: 600; color: var(--text-muted); margin-bottom: 22px;">
+                    Unmatched Infrastructure Footprint
+                </div>
+                <div style="font-size: 22px; line-height: 1.6; color: var(--text-main);">
+                    Provision <strong>thousands of servers</strong> in minutes.<br>
+                    Eliminate physical hardware ceilings forever.
+                </div>
+            </div>
+
+            <div class="card green-border" style="padding: 36px 32px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 38px; font-weight: 800; color: var(--accent-green); margin-bottom: 6px;">
+                    Broadest Feature Set
+                </div>
+                <div style="font-size: 19px; font-weight: 600; color: var(--text-muted); margin-bottom: 22px;">
+                    Comprehensive Service Ecosystem
+                </div>
+                <div style="font-size: 22px; line-height: 1.6; color: var(--text-main);">
+                    Full suite of Compute, Storage, and Databases.<br>
+                    Engineers focus <strong>100% on streaming</strong>, zero time on server racking.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 3 — Architectural Transformation</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Core Decision: <span>Say No to "Lift &amp; Shift"</span>
+            </h2>
+        </div>
+
+        <div class="statement-box coral-glow reveal" style="max-width: 1100px; margin: 0 auto; padding: 26px 40px; text-align: center;">
+            <div class="statement-text" style="font-size: 34px; line-height: 1.35;">
+                "A forklift migration would port all the <span style="color: var(--accent-coral);">problems and limitations</span> of the data center to cloud."
+            </div>
+            <div class="statement-sub" style="font-size: 18px; color: var(--text-muted); margin-top: 6px;">
+                &mdash; Netflix rejected Lift-and-Shift, committing to a full <strong>Cloud-Native Transformation</strong>
+            </div>
+        </div>
+
+        <div class="grid-2 reveal" style="max-width: 1100px; width: 100%; margin: 0 auto; gap: 32px;">
+            <div class="card coral-border" style="padding: 32px 36px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 12px;">
+                    <span style="font-family: var(--font-head); font-size: 30px; font-weight: 800; color: var(--accent-coral);">Lift &amp; Shift</span>
+                    <span class="badge badge-coral">Rejected</span>
+                </div>
+                <div style="font-size: 18px; font-weight: 600; color: var(--text-muted); margin-bottom: 16px;">
+                    Simply changing server physical location
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 12px; font-size: 21px; color: var(--text-main);">
+                    <div>❌ Retains legacy bottlenecks &amp; single points of failure (SPOF)</div>
+                    <div>❌ Higher cloud bills, zero auto-elasticity benefits</div>
+                </div>
+            </div>
+
+            <div class="card green-border" style="padding: 32px 36px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 12px;">
+                    <span style="font-family: var(--font-head); font-size: 30px; font-weight: 800; color: var(--accent-green);">Cloud-Native</span>
+                    <span class="badge badge-green">Chosen Path</span>
+                </div>
+                <div style="font-size: 18px; font-weight: 600; color: var(--text-muted); margin-bottom: 16px;">
+                    Complete ground-up system redesign
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 12px; font-size: 21px; color: var(--text-main);">
+                    <div> Optimized 100% for distributed, resilient environments</div>
+                    <div> Instant auto-scaling, absolute failure isolation</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 3 — Architectural Transformation</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Architectural Shift: <span>Monolith to Microservices</span>
+            </h2>
+        </div>
+
+        <div class="grid-2 reveal" style="max-width: 1100px; width: 100%; margin: 0 auto; gap: 32px;">
+            <div class="card coral-border" style="padding: 36px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 14px; margin-bottom: 24px;">
+                    <span style="font-family: var(--font-head); font-size: 30px; font-weight: 800; color: var(--accent-coral);">BEFORE (Data Center)</span>
+                    <span class="badge badge-coral">Monolith</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 20px; font-size: 22px; color: var(--text-main);">
+                    <div>
+                        <strong style="color: var(--accent-coral);">Monolithic Core:</strong><br>
+                        Single massive codebase, tightly coupled, high-risk deploys
+                    </div>
+                    <div>
+                        <strong style="color: var(--accent-coral);">Relational Database:</strong><br>
+                        Rigid normalized tables, centralized contention bottlenecks
+                    </div>
+                    <div>
+                        <strong style="color: var(--accent-coral);">Single Point of Failure:</strong><br>
+                        One database outage halts the entire application
+                    </div>
+                </div>
+            </div>
+
+            <div class="card green-border" style="padding: 36px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 14px; margin-bottom: 24px;">
+                    <span style="font-family: var(--font-head); font-size: 30px; font-weight: 800; color: var(--accent-green);">AFTER (Cloud-Native)</span>
+                    <span class="badge badge-green">Microservices</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 20px; font-size: 22px; color: var(--text-main);">
+                    <div>
+                        <strong style="color: var(--accent-green);">Hundreds of Microservices:</strong><br>
+                        Decoupled domains, continuous independent releases
+                    </div>
+                    <div>
+                        <strong style="color: var(--accent-green);">Distributed NoSQL:</strong><br>
+                        Denormalized schema, ultra-high read/write throughput
+                    </div>
+                    <div>
+                        <strong style="color: var(--accent-green);">Failure Isolation:</strong><br>
+                        If one service fails (e.g., ratings), video streaming continues smoothly
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 3 — Elasticity &amp; Scale</div>
+    </div>
+    <div class="slide-body">
+        <h2 class="slide-title reveal">Solving the Scale Equation: <span>Elasticity in Minutes</span></h2>
+
+        <div class="grid-2 reveal" style="margin-bottom: 32px;">
+            <div class="card blue-border">
+                <div class="card-header">
+                    <span style="font-size: 26px;">Adding Thousands of Servers</span>
+                    <span class="badge badge-blue">Minutes</span>
+                </div>
+                <div class="card-body">
+                    Netflix confirmed: They could add <strong>thousands of virtual servers and petabytes of storage in minutes</strong> without advance physical capacity planning.
+                </div>
+            </div>
+
+            <div class="card green-border">
+                <div class="card-header">
+                    <span style="font-size: 26px;">Problem Solved:</span>
+                    <span class="badge badge-green">Uncapped Growth</span>
+                </div>
+                <div class="card-body">
+                    Infrastructure capacity was no longer bounded by the physical velocity of engineers procuring, shipping, and racking hardware in data centers.
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2 reveal">
+            <div class="card">
+                <div style="font-family: var(--font-head); font-size: 22px; font-weight: 700; color: var(--accent-coral); margin-bottom: 12px;">Data Center Model</div>
+                <div style="font-family: var(--font-code); font-size: 18px; color: var(--text-muted); line-height: 1.6;">
+                    Need capacity &rarr; Procure hardware &rarr; Install &rarr; Configure &rarr; <span style="color: var(--accent-coral); font-weight: 700;">Wait Months</span>
+                </div>
+            </div>
+
+            <div class="card active-border">
+                <div style="font-family: var(--font-head); font-size: 22px; font-weight: 700; color: var(--accent-green); margin-bottom: 12px;">Cloud Elasticity Model</div>
+                <div style="font-family: var(--font-code); font-size: 18px; color: var(--text-muted); line-height: 1.6;">
+                    Need capacity &rarr; Call API / Auto-Scale &rarr; Deploy &rarr; <span style="color: var(--accent-green); font-weight: 700;">Ready in Minutes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 3 — Global Scale</div>
+    </div>
+    <div class="slide-body">
+        <h2 class="slide-title reveal">January 6, 2016: <span>Global Expansion to 130+ Countries</span></h2>
+
+        <div class="statement-box green-glow reveal" style="margin-bottom: 32px;">
+            <div class="statement-text">
+                "On January 6, 2016, Netflix activated service simultaneously across 130+ new countries."
+            </div>
+            <div class="statement-sub">Leveraging multiple AWS cloud regions to dynamically provision global streaming capacity on demand.</div>
+        </div>
+
+        <div class="grid-3 reveal">
+            <div class="card green-border" style="text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 56px; font-weight: 800; color: var(--accent-green); margin-bottom: 8px;">130+</div>
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Countries in a Day</div>
+                <div style="font-size: 16px; color: var(--text-muted);">Instant global availability powered by multi-region AWS cloud infrastructure.</div>
+            </div>
+
+            <div class="card green-border" style="text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 56px; font-weight: 800; color: var(--accent-blue); margin-bottom: 8px;">Zero</div>
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Data Centers Built</div>
+                <div style="font-size: 16px; color: var(--text-muted);">Zero physical footprint or local server rooms required across 130+ territories.</div>
+            </div>
+
+            <div class="card green-border" style="text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 56px; font-weight: 800; color: var(--accent-purple); margin-bottom: 8px;">Dynamic</div>
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Multi-Region Capacity</div>
+                <div style="font-size: 16px; color: var(--text-muted);">Spun up capacity wherever demand surged, de-provisioned when idle.</div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 4 — Fault-Tolerant Philosophy</div>
+    </div>
+    <div class="slide-body">
+        <h2 class="slide-title reveal">High Availability: <span>Cloud Still Fails &mdash; Design for It</span></h2>
+
+        <div class="statement-box blue-glow reveal" style="margin-bottom: 32px;">
+            <div class="statement-text">
+                "Failures are inevitable in cloud environments. You must design services that remain highly available even when underlying infrastructure fails."
+            </div>
+            <div class="statement-sub">The bedrock of Netflix's engineering philosophy: <strong>Design for Failure</strong></div>
+        </div>
+
+        <div class="grid-2 reveal">
+            <div class="card coral-border">
+                <div class="card-header">
+                    <span>Old Mindset: Prevent Failure</span>
+                    <span class="badge badge-coral">Data Center</span>
+                </div>
+                <div class="card-body">
+                    <ul style="margin-left: 20px; display: flex; flex-direction: column; gap: 12px;">
+                        <li>Invest in expensive, redundant enterprise-grade hardware.</li>
+                        <li>Assume infrastructure components will rarely or never fail.</li>
+                        <li><strong>Reality:</strong> When an inevitable failure occurs &rarr; total systemic blackout.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card green-border">
+                <div class="card-header">
+                    <span>New Mindset: Embrace Failure</span>
+                    <span class="badge badge-green">Cloud-Native</span>
+                </div>
+                <div class="card-body">
+                    <ul style="margin-left: 20px; display: flex; flex-direction: column; gap: 12px;">
+                        <li>Accept that virtual instances, networks, and disks will crash constantly.</li>
+                        <li>Build stateless, redundant, self-healing services across availability zones.</li>
+                        <li><strong>Reality:</strong> Infrastructure fails continuously, but members never notice.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 4 — Fault-Tolerant Philosophy</div>
+    </div>
+    <div class="slide-body">
+        <h2 class="slide-title reveal">Chaos Engineering: <span>Simian Army Battle Drills</span></h2>
+
+        <div class="grid-2 reveal" style="margin-bottom: 28px;">
+            <div class="card active-border">
+                <div class="card-header">
+                    <span>Chaos Monkey</span>
+                    <span class="badge badge-netflix">Instance Failure</span>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 12px;">
+                        Continuously and pseudo-randomly terminates production virtual server instances during regular business hours.
+                    </p>
+                    <div style="font-family: var(--font-code); font-size: 16px; color: var(--text-muted); background: var(--bg-canvas); padding: 12px 16px; border-radius: 8px;">
+                        Goal: Ensure every microservice architecture is intrinsically resilient to unexpected instance loss.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card blue-border">
+                <div class="card-header">
+                    <span>Chaos Kong</span>
+                    <span class="badge badge-blue">Region Evacuation</span>
+                </div>
+                <div class="card-body">
+                    <p style="margin-bottom: 12px;">
+                        Simulates an entire AWS Region blackout by diverting all live user traffic to alternate geographic regions.
+                    </p>
+                    <div style="font-family: var(--font-code); font-size: 16px; color: var(--text-muted); background: var(--bg-canvas); padding: 12px 16px; border-radius: 8px;">
+                        Goal: Verify seamless multi-region active-active failover without user-visible downtime.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card reveal" style="padding: 20px 32px; border-color: var(--accent-netflix); background: rgba(229, 9, 20, 0.04); text-align: center;">
+            <span style="font-size: 22px; font-weight: 600; color: var(--text-main);">
+                👉 <strong>Core Lesson:</strong> The best way to prevent catastrophic failures in production is to systematically inject them on purpose.
+            </span>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 5 — Post-Migration Results</div>
+    </div>
+    <div class="slide-body">
+        <h2 class="slide-title reveal" style="margin-bottom: 24px;">Post-Migration: <span>What Problems Did Netflix Actually Solve?</span></h2>
+
+        <div class="reveal">
+            <table class="scorecard-table">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Pre-Migration Pain Point</th>
+                        <th style="width: 32%;">Architectural Transformation</th>
+                        <th style="width: 38%;">Reported Netflix Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="pain-cell">Single points of failure</td>
+                        <td class="sol-cell">Distributed architecture</td>
+                        <td class="res-cell">Maximized fault tolerance, eliminated widespread catastrophic outages</td>
+                    </tr>
+                    <tr>
+                        <td class="pain-cell">Capacity lagged workload surges</td>
+                        <td class="sol-cell">Cloud elasticity</td>
+                        <td class="res-cell">Added <strong>thousands of servers</strong> and petabytes in minutes</td>
+                    </tr>
+                    <tr>
+                        <td class="pain-cell">Physical Data Center limits</td>
+                        <td class="sol-cell">AWS global footprint</td>
+                        <td class="res-cell">Supported viewing growth surge of <strong>1,000×</strong> without capacity ceiling</td>
+                    </tr>
+                    <tr>
+                        <td class="pain-cell">Global expansion roadblocks</td>
+                        <td class="sol-cell">Multiple AWS regions</td>
+                        <td class="res-cell">Launched worldwide across <strong>130+ countries</strong> simultaneously</td>
+                    </tr>
+                    <tr>
+                        <td class="pain-cell">Monolithic slow-paced releases</td>
+                        <td class="sol-cell">Microservices architecture</td>
+                        <td class="res-cell">Accelerated innovation velocity, deploying code hundreds of times daily</td>
+                    </tr>
+                    <tr>
+                        <td class="pain-cell">Physical hardware constraints</td>
+                        <td class="sol-cell">Cloud-native redesign</td>
+                        <td class="res-cell">Completely eliminated physical data center operational overhead</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 6 — Trade-offs &amp; Reality</div>
+    </div>
+    <div class="slide-body">
+        <h2 class="slide-title reveal">Architectural Trade-offs: <span>Cloud Solves Scale, Creates New Complexity</span></h2>
+
+        <div class="grid-3 reveal">
+            <div class="card coral-border">
+                <div class="card-header">
+                    <span>Operational Complexity</span>
+                    <span class="badge badge-coral">Challenge</span>
+                </div>
+                <div class="card-body">
+                    Orchestrating hundreds of distributed microservices demands sophisticated service discovery, distributed tracing, and advanced observability tooling.
+                </div>
+            </div>
+
+            <div class="card amber-border">
+                <div class="card-header">
+                    <span>Network Fallacies &amp; Latency</span>
+                    <span class="badge badge-amber">Trade-off</span>
+                </div>
+                <div class="card-body">
+                    In-memory function calls become network RPCs. Systems must engineer around network partitions, jitter, retry storms, and cascading failures.
+                </div>
+            </div>
+
+            <div class="card blue-border">
+                <div class="card-header">
+                    <span>Eventual Consistency</span>
+                    <span class="badge badge-blue">Data Model</span>
+                </div>
+                <div class="card-body">
+                    Migrating away from ACID transactions to distributed NoSQL requires adopting eventual consistency models across business workflows.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 7 — The Cost Equation</div>
+    </div>
+    <div class="slide-body">
+        <h2 class="slide-title reveal">Was Cost the Real Driver? <span>The Answer: NO</span></h2>
+
+        <div class="statement-box amber-glow reveal" style="margin-bottom: 32px;">
+            <div class="statement-text">
+                "Cost reduction was a welcome byproduct, but never the primary catalyst. Elasticity and business agility were the true drivers."
+            </div>
+            <div class="statement-sub">&mdash; Key takeaway from official Netflix retrospective (2016)</div>
+        </div>
+
+        <div class="grid-2 reveal">
+            <div class="card coral-border">
+                <div class="card-header">
+                    <span>The Myth: Cloud Cuts Costs Automatically</span>
+                    <span class="badge badge-coral">Misconception</span>
+                </div>
+                <div class="card-body">
+                    <ul style="margin-left: 20px; display: flex; flex-direction: column; gap: 12px;">
+                        <li><strong>Expectation:</strong> "Moving to cloud immediately slashes infrastructure spending by 50%."</li>
+                        <li><strong>Reality:</strong> If you simply lift-and-shift VMs without refactoring, cloud bills frequently exceed on-premise costs.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card green-border">
+                <div class="card-header">
+                    <span>The Reality: Cloud Buys Elasticity &amp; Speed</span>
+                    <span class="badge badge-green">Business Value</span>
+                </div>
+                <div class="card-body">
+                    <ul style="margin-left: 20px; display: flex; flex-direction: column; gap: 12px;">
+                        <li><strong>What Netflix Bought:</strong> Zero-lead-time scaling, developer autonomy, and fault tolerance.</li>
+                        <li><strong>Result:</strong> Cost per stream plummeted because streaming hours expanded 1,000× faster than infrastructure spending.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 8 — Pragmatic Architecture</div>
+    </div>
+    <div class="slide-body">
+        <h2 class="slide-title reveal">Critical Nuance: <span>Not Everything Runs on AWS</span></h2>
+
+        <div class="statement-box green-glow reveal" style="margin-bottom: 28px;">
+            <div class="statement-text">
+                Compute &amp; Control Plane run on AWS; Video Bitstream Delivery runs on Open Connect CDN.
+            </div>
+            <div class="statement-sub">Netflix adopted a pragmatic hybrid strategy: Match architecture to the exact physics of the workload.</div>
+        </div>
+
+        <div class="grid-2 reveal">
+            <div class="card blue-border">
+                <div class="card-header">
+                    <span>AWS Cloud: Logic &amp; Control Plane</span>
+                    <span class="badge badge-blue">AWS Compute</span>
+                </div>
+                <div class="card-body">
+                    <ul style="margin-left: 20px; display: flex; flex-direction: column; gap: 10px;">
+                        <li>User signup, billing, and personalized video recommendations.</li>
+                        <li>Elastic microservices, NoSQL databases, and analytical pipelines.</li>
+                        <li>Dynamic, highly variable computing with complex business rules.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card active-border">
+                <div class="card-header">
+                    <span>Open Connect: Video Bit Delivery</span>
+                    <span class="badge badge-netflix">Custom CDN</span>
+                </div>
+                <div class="card-body">
+                    <ul style="margin-left: 20px; display: flex; flex-direction: column; gap: 10px;">
+                        <li>Custom hardware appliances embedded directly within global ISP networks.</li>
+                        <li>Caches massive video files as close as possible to the user's home connection.</li>
+                        <li>Transmitting petabytes of static video across public cloud transit would be financially prohibitive.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 8 — Pragmatic Architecture</div>
+    </div>
+    <div class="slide-body">
+        <h2 class="slide-title reveal">Build vs. Buy: <span>The Journey Continues (2025 Update)</span></h2>
+
+        <div class="statement-box blue-glow reveal" style="margin-bottom: 28px;">
+            <div class="statement-text">
+                In 2025, AWS published an architectural update: Netflix migrated key stateful workloads to Amazon Aurora.
+            </div>
+            <div class="statement-sub">Demonstrating continuous re-evaluation of custom in-house systems versus modern managed cloud primitives.</div>
+        </div>
+
+        <div class="grid-2 reveal">
+            <div class="card amber-border">
+                <div class="card-header">
+                    <span>2008 &ndash; 2016: Build In-House Systems</span>
+                    <span class="badge badge-amber">Custom Build</span>
+                </div>
+                <div class="card-body">
+                    <ul style="margin-left: 20px; display: flex; flex-direction: column; gap: 12px;">
+                        <li>When AWS lacked mature distributed primitives, Netflix engineered Eureka, Zuul, Hystrix, and Simian Army.</li>
+                        <li>Open-sourced as Netflix OSS, setting global microservice standards.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card green-border">
+                <div class="card-header">
+                    <span>2016 &ndash; 2025: Transition to Managed Services</span>
+                    <span class="badge badge-green">Managed Services</span>
+                </div>
+                <div class="card-body">
+                    <ul style="margin-left: 20px; display: flex; flex-direction: column; gap: 12px;">
+                        <li>As AWS managed offerings matured, Netflix adopted Aurora, Managed Kubernetes, and Serverless primitives.</li>
+                        <li><strong>Guiding Principle:</strong> Delegate commodity infrastructure to AWS; focus engineering bandwidth on core streaming innovation.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 9 — Migration Chronology</div>
+    </div>
+    <div class="slide-body">
+        <h2 class="slide-title reveal">Migration Chronology: <span>An 8-Year Journey (2008 &ndash; 2016)</span></h2>
+
+        <div class="grid-5 reveal">
+            <div class="card coral-border">
+                <div style="font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--accent-coral); margin-bottom: 6px;">2008</div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">The Catalyst</div>
+                <div style="font-size: 15px; color: var(--text-muted); line-height: 1.4;">Major DB corruption halts DVD shipping. Core decision made to migrate to AWS.</div>
+            </div>
+
+            <div class="card amber-border">
+                <div style="font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--accent-amber); margin-bottom: 6px;">2010</div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">Streaming Moves</div>
+                <div style="font-size: 15px; color: var(--text-muted); line-height: 1.4;">Primary streaming website and client applications transition to AWS cloud.</div>
+            </div>
+
+            <div class="card blue-border">
+                <div style="font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--accent-blue); margin-bottom: 6px;">2011</div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">Chaos Monkey</div>
+                <div style="font-size: 15px; color: var(--text-muted); line-height: 1.4;">Simian Army open-sourced; pioneers production chaos engineering industry-wide.</div>
+            </div>
+
+            <div class="card purple-border">
+                <div style="font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--accent-purple); margin-bottom: 6px;">2012</div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">Open Connect</div>
+                <div style="font-size: 15px; color: var(--text-muted); line-height: 1.4;">Launches dedicated custom CDN embedded inside global ISPs for video delivery.</div>
+            </div>
+
+            <div class="card active-border">
+                <div style="font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--accent-netflix); margin-bottom: 6px;">2016</div>
+                <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">100% Cloud</div>
+                <div style="font-size: 15px; color: var(--text-muted); line-height: 1.4;">Final customer billing and data systems migrated. Last physical data center powered down.</div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 10 — Key Takeaways</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 24px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Case Study Takeaways: <span>5 Enduring Lessons</span>
+            </h2>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; max-width: 1200px; width: 100%; margin: 0 auto;" class="reveal">
+            <!-- Card 1 -->
+            <div class="card active-border" style="display: flex; flex-direction: row; align-items: center; gap: 24px; padding: 18px 28px;">
+                <div style="font-family: var(--font-head); font-size: 32px; font-weight: 800; color: var(--accent-netflix); min-width: 50px;">01</div>
+                <div>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">Start from the business constraint</div>
+                    <div style="font-size: 17px; color: var(--text-muted); margin-top: 2px;">Business growth &rarr; Infrastructure constraint &rarr; Architecture change. Never adopt cloud for fashion.</div>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="card blue-border" style="display: flex; flex-direction: row; align-items: center; gap: 24px; padding: 18px 28px;">
+                <div style="font-family: var(--font-head); font-size: 32px; font-weight: 800; color: var(--accent-blue); min-width: 50px;">02</div>
+                <div>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">Not just infrastructure &mdash; Total architectural redesign</div>
+                    <div style="font-size: 17px; color: var(--text-muted); margin-top: 2px;">Comprehensive transformation across application services, databases, deployment pipelines, and engineering operating culture.</div>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="card amber-border" style="display: flex; flex-direction: row; align-items: center; gap: 24px; padding: 18px 28px;">
+                <div style="font-family: var(--font-head); font-size: 32px; font-weight: 800; color: var(--accent-amber); min-width: 50px;">03</div>
+                <div>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">Design for failure</div>
+                    <div style="font-size: 17px; color: var(--text-muted); margin-top: 2px;">Never assume infrastructure won't fail &mdash; build resilient distributed systems on top of unreliable commodity parts.</div>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="card green-border" style="display: flex; flex-direction: row; align-items: center; gap: 24px; padding: 18px 28px;">
+                <div style="font-family: var(--font-head); font-size: 32px; font-weight: 800; color: var(--accent-green); min-width: 50px;">04</div>
+                <div>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">Elasticity beats "Bigger Iron"</div>
+                    <div style="font-size: 17px; color: var(--text-muted); margin-top: 2px;">Shift from vertical scaling to horizontal, distributed, and elastic architecture that auto-scales on demand.</div>
+                </div>
+            </div>
+
+            <!-- Card 5 -->
+            <div class="card purple-border" style="display: flex; flex-direction: row; align-items: center; gap: 24px; padding: 18px 28px;">
+                <div style="font-family: var(--font-head); font-size: 32px; font-weight: 800; color: var(--accent-purple); min-width: 50px;">05</div>
+                <div>
+                    <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">Match architecture to workload (Workload-Driven Architecture)</div>
+                    <div style="font-size: 17px; color: var(--text-muted); margin-top: 2px;">AWS Cloud for complex application state; custom Open Connect CDN for high-throughput video delivery. Uncompromisingly pragmatic.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 11 — Case Study 2: Dropbox</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <h2 class="slide-title reveal" style="font-size: 72px; margin-bottom: 0; text-align: center;">The Opposite Direction: <span style="color: var(--accent-blue);">DROPBOX</span></h2>
+
+        <div class="statement-box blue-glow reveal" style="max-width: 1200px; padding: 44px 56px; margin: 28px auto 36px; text-align: center;">
+            <div class="statement-text" style="font-size: 38px; line-height: 1.35; margin-bottom: 12px;">
+                Migrating the vast majority of user data away from AWS, back to custom in-house infrastructure.
+            </div>
+            <div class="statement-sub" style="font-size: 22px;">Magic Pocket &mdash; one of the few exabyte-scale custom storage architectures in the world.</div>
+        </div>
+
+        <div class="grid-3 reveal" style="max-width: 1200px; width: 100%; margin: 0 auto 32px;">
+            <div class="card" style="text-align: center; padding: 26px;">
+                <div style="font-family: var(--font-head); font-size: 48px; font-weight: 800; color: var(--accent-blue); margin-bottom: 6px;">~500 PB</div>
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-main);">Data Migrated</div>
+            </div>
+            <div class="card" style="text-align: center; padding: 26px;">
+                <div style="font-family: var(--font-head); font-size: 48px; font-weight: 800; color: var(--accent-green); margin-bottom: 6px;">90%</div>
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-main);">Moved off Amazon S3</div>
+            </div>
+            <div class="card" style="text-align: center; padding: 26px;">
+                <div style="font-family: var(--font-head); font-size: 48px; font-weight: 800; color: var(--accent-amber); margin-bottom: 6px;">2013&ndash;2016</div>
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-main);">Migration Journey</div>
+            </div>
+        </div>
+
+        <div class="grid-2 reveal" style="max-width: 1100px; width: 100%; margin: 0 auto; gap: 28px;">
+            <div class="card coral-border" style="padding: 20px 26px;">
+                <div style="font-family: var(--font-head); font-size: 20px; font-weight: 800; color: var(--accent-coral); margin-bottom: 10px; text-align: center;">NETFLIX</div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 14px; font-size: 18px; font-weight: 600; color: var(--text-main);">
+                    <span>Data Center</span>
+                    <span style="color: var(--accent-coral); font-weight: 800; font-size: 22px;">&rarr;</span>
+                    <span style="color: var(--accent-coral); font-weight: 700;">100% AWS Cloud</span>
+                </div>
+            </div>
+            <div class="card blue-border" style="padding: 20px 26px;">
+                <div style="font-family: var(--font-head); font-size: 20px; font-weight: 800; color: var(--accent-blue); margin-bottom: 10px; text-align: center;">DROPBOX</div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 14px; font-size: 18px; font-weight: 600; color: var(--text-main);">
+                    <span>AWS Cloud (S3)</span>
+                    <span style="color: var(--accent-blue); font-weight: 800; font-size: 22px;">&rarr;</span>
+                    <span style="color: var(--accent-blue); font-weight: 700;">Custom Storage (Hybrid)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 11 — The Core Bottleneck</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 28px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Exponential Scale: <span>40PB &rarr; 500PB</span>
+            </h2>
+        </div>
+
+        <div class="statement-box coral-glow reveal" style="max-width: 1200px; margin: 0 auto; padding: 32px 48px; text-align: center;">
+            <div class="statement-text" style="font-size: 36px; line-height: 1.35; margin-bottom: 8px;">
+                Storing 500 petabytes of user files on public cloud S3 was eroding core business margins.
+            </div>
+            <div class="statement-sub" style="font-size: 20px; color: var(--text-muted);">
+                Unlike bursty streaming compute, raw file storage costs scale strictly linearly with total terabytes stored.
+            </div>
+        </div>
+
+        <div class="grid-3 reveal" style="max-width: 1200px; width: 100%; margin: 0 auto; gap: 24px;">
+            <div class="card coral-border" style="padding: 28px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 44px; font-weight: 800; color: var(--accent-coral); margin-bottom: 4px;">40 PB &rarr; 500 PB</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">Rapid Volume Explosion</div>
+                <div style="font-size: 16px; color: var(--text-muted); margin-top: 6px;">From 2012 to 2016, user data grew more than 12× over four years.</div>
+            </div>
+
+            <div class="card coral-border" style="padding: 28px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 44px; font-weight: 800; color: var(--accent-coral); margin-bottom: 4px;">Linear Cloud Bill</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">Cost Accumulation</div>
+                <div style="font-size: 16px; color: var(--text-muted); margin-top: 6px;">S3 charges every gigabyte monthly. Cold files generate zero revenue while burning cash.</div>
+            </div>
+
+            <div class="card amber-border" style="padding: 28px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 44px; font-weight: 800; color: var(--accent-amber); margin-bottom: 4px;">Gross Margin Squeeze</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main);">The Business Pressure</div>
+                <div style="font-size: 16px; color: var(--text-muted); margin-top: 6px;">Infrastructure became the company's single largest expense ahead of their planned IPO.</div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 11 — Storage Economics</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Why Did Dropbox Build Their Own Storage? <span>3 Economic Drivers</span>
+            </h2>
+        </div>
+
+        <div class="grid-3 reveal" style="max-width: 1240px; width: 100%; margin: 0 auto; gap: 28px;">
+            <div class="card blue-border" style="padding: 32px 28px;">
+                <div style="font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--accent-blue); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    1. Hyperscale Cost Arbitrage
+                </div>
+                <div style="font-size: 18px; line-height: 1.5; color: var(--text-main);">
+                    At 500+ petabytes, public cloud vendor profit margins represented tens of millions of dollars in annual savings if brought on-premise.
+                </div>
+            </div>
+
+            <div class="card green-border" style="padding: 32px 28px;">
+                <div style="font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--accent-green); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    2. Extreme Workload Specialization
+                </div>
+                <div style="font-size: 18px; line-height: 1.5; color: var(--text-main);">
+                    S3 is a general-purpose object store. Dropbox only needed an ultra-dense, immutable 4MB block store with zero random overwrite overhead.
+                </div>
+            </div>
+
+            <div class="card amber-border" style="padding: 32px 28px;">
+                <div style="font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--accent-amber); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    3. Custom Hardware Engineering
+                </div>
+                <div style="font-size: 18px; line-height: 1.5; color: var(--text-main);">
+                    Ability to design custom 1U/4U disk sleds and take advantage of SMR (Shingled Magnetic Recording) drives tailored specifically to their block software.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 11 — The Hybrid Model</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Not "Leaving the Cloud" &mdash; <span>Going Hybrid</span>
+            </h2>
+        </div>
+
+        <div class="statement-box blue-glow reveal" style="max-width: 1100px; margin: 0 auto; padding: 24px 36px; text-align: center;">
+            <div class="statement-text" style="font-size: 32px; line-height: 1.35;">
+                Dropbox didn't abandon AWS completely &mdash; they split workloads by their physical unit economics.
+            </div>
+        </div>
+
+        <div class="grid-2 reveal" style="max-width: 1100px; width: 100%; margin: 0 auto; gap: 32px;">
+            <div class="card blue-border" style="padding: 32px 36px;">
+                <div style="font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--accent-blue); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    On-Premise (Magic Pocket)
+                </div>
+                <div style="font-size: 18px; font-weight: 600; color: var(--text-muted); margin-bottom: 16px;">The Data Plane (Storage of Raw Blocks)</div>
+                <div style="display: flex; flex-direction: column; gap: 10px; font-size: 19px; color: var(--text-main);">
+                    <div> Raw user file chunks (4MB immutable blocks)</div>
+                    <div> Custom server racks, SMR disks, high-density hardware</div>
+                    <div> Massive scale, predictable capacity, zero S3 markup</div>
+                </div>
+            </div>
+
+            <div class="card green-border" style="padding: 32px 36px;">
+                <div style="font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--accent-green); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    AWS Cloud (Public Compute)
+                </div>
+                <div style="font-size: 18px; font-weight: 600; color: var(--text-muted); margin-bottom: 16px;">The Control Plane &amp; Global Elasticity</div>
+                <div style="display: flex; flex-direction: column; gap: 10px; font-size: 19px; color: var(--text-main);">
+                    <div> User authentication, search indexing, preview generation</div>
+                    <div> Bursty compute workloads, edge acceleration, European data residency</div>
+                    <div> Elastic scale where demand fluctuates rapidly</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 11 — Workload Fingerprint</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Files Aren't Monolithic Objects &mdash; <span>They Are Block Sequences</span>
+            </h2>
+        </div>
+
+        <div class="grid-3 reveal" style="max-width: 1200px; width: 100%; margin: 0 auto; gap: 28px;">
+            <div class="card" style="padding: 28px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 32px; font-weight: 800; color: var(--accent-blue); margin-bottom: 10px;">4 MB Chunks</div>
+                <div style="font-size: 18px; font-weight: 600; color: var(--text-main); margin-bottom: 10px;">Fixed-Size Blocks</div>
+                <div style="font-size: 16px; color: var(--text-muted); line-height: 1.5;">Every file uploaded by a user is sliced into 4MB chunks on the client side before transmission.</div>
+            </div>
+
+            <div class="card active-border" style="padding: 28px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 32px; font-weight: 800; color: var(--accent-green); margin-bottom: 10px;">SHA-256 Hash</div>
+                <div style="font-size: 18px; font-weight: 600; color: var(--text-main); margin-bottom: 10px;">Content-Addressable</div>
+                <div style="font-size: 16px; color: var(--text-muted); line-height: 1.5;">Blocks are identified and indexed strictly by their cryptographic hash. The address IS the content.</div>
+            </div>
+
+            <div class="card" style="padding: 28px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 32px; font-weight: 800; color: var(--accent-purple); margin-bottom: 10px;">Global Dedup</div>
+                <div style="font-size: 18px; font-weight: 600; color: var(--text-main); margin-bottom: 10px;">Zero Redundant Storage</div>
+                <div style="font-size: 16px; color: var(--text-muted); line-height: 1.5;">If two users upload the exact same file or OS image, it is stored only once across the entire global system.</div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 11 — Storage Architecture</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Magic Pocket: <span>Immutable Block Storage</span>
+            </h2>
+        </div>
+
+        <div class="grid-3 reveal" style="max-width: 1240px; width: 100%; margin: 0 auto; gap: 28px;">
+            <div class="card blue-border" style="padding: 30px;">
+                <div style="font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--accent-blue); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    1. Frontend Gateways
+                </div>
+                <div style="font-size: 18px; line-height: 1.5; color: var(--text-main);">
+                    Terminate client TLS connections, validate block hashes, and orchestrate streaming writes into storage cells.
+                </div>
+            </div>
+
+            <div class="card green-border" style="padding: 30px;">
+                <div style="font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--accent-green); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    2. Storage Cells &amp; Daemons
+                </div>
+                <div style="font-size: 18px; line-height: 1.5; color: var(--text-main);">
+                    Purpose-built Rust &amp; Go storage engines writing blocks sequentially to disk sleds, maximizing physical disk spindle efficiency.
+                </div>
+            </div>
+
+            <div class="card amber-border" style="padding: 30px;">
+                <div style="font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--accent-amber); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    3. Master &amp; Metadata Tier
+                </div>
+                <div style="font-size: 18px; line-height: 1.5; color: var(--text-main);">
+                    Tracks block locations, coordinates erasure coding repairs, monitors disk failure rates, and ensures continuous data durability.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 11 — Control vs Data Plane</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Two Distinct Planes: <span>Control vs Data</span>
+            </h2>
+        </div>
+
+        <div class="grid-2 reveal" style="max-width: 1100px; width: 100%; margin: 0 auto; gap: 32px;">
+            <div class="card coral-border" style="padding: 32px 36px;">
+                <div style="font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--accent-coral); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    Control Plane (Metadata &amp; Auth)
+                </div>
+                <div style="font-size: 18px; font-weight: 600; color: var(--text-muted); margin-bottom: 16px;">Small, highly transactional, low-latency state</div>
+                <div style="display: flex; flex-direction: column; gap: 10px; font-size: 19px; color: var(--text-main);">
+                    <div> User accounts, permissions, file tree namespaces</div>
+                    <div> High mutation rate, strict ACID transaction requirements</div>
+                    <div> Runs efficiently on managed cloud relational DBs &amp; fast caches</div>
+                </div>
+            </div>
+
+            <div class="card blue-border" style="padding: 32px 36px;">
+                <div style="font-family: var(--font-head); font-size: 28px; font-weight: 800; color: var(--accent-blue); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    Data Plane (Raw Blocks)
+                </div>
+                <div style="font-size: 18px; font-weight: 600; color: var(--text-muted); margin-bottom: 16px;">Massive exabyte volume, immutable payloads</div>
+                <div style="display: flex; flex-direction: column; gap: 10px; font-size: 19px; color: var(--text-main);">
+                    <div> 99% of total physical infrastructure byte volume</div>
+                    <div> Write-once, read-many, zero in-place mutations</div>
+                    <div> Highly cost-sensitive &rarr; Hosted on custom Magic Pocket disk arrays</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 11 — Reliability at Scale</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Reliability at Exabyte Scale: <span>12+ Nines Durability</span>
+            </h2>
+        </div>
+
+        <div class="grid-3 reveal" style="max-width: 1240px; width: 100%; margin: 0 auto; gap: 28px;">
+            <div class="card blue-border" style="padding: 30px;">
+                <div style="font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--accent-blue); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    1. Reed-Solomon Erasure Coding
+                </div>
+                <div style="font-size: 18px; line-height: 1.5; color: var(--text-main);">
+                    Data blocks are encoded into data and parity fragments (e.g., 9+3). The system can sustain multiple simultaneous drive failures with zero data loss.
+                </div>
+            </div>
+
+            <div class="card green-border" style="padding: 30px;">
+                <div style="font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--accent-green); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    2. Geographic Multi-Region Durability
+                </div>
+                <div style="font-size: 18px; line-height: 1.5; color: var(--text-main);">
+                    Blocks are distributed across geographically separated data center facilities to withstand catastrophic power grid or environmental disasters.
+                </div>
+            </div>
+
+            <div class="card amber-border" style="padding: 30px;">
+                <div style="font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--accent-amber); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    3. Autonomous Disk Scrubbing &amp; Repair
+                </div>
+                <div style="font-size: 18px; line-height: 1.5; color: var(--text-main);">
+                    Continuous background scrubbers detect silent bit rot. Automated repair daemons reconstruct degraded fragments onto spare capacity in minutes.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 11 — Custom Hardware &amp; SMR</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Why SMR Drives Fit Magic Pocket Perfectly
+            </h2>
+        </div>
+
+        <div class="statement-box green-glow reveal" style="max-width: 1100px; margin: 0 auto; padding: 24px 36px; text-align: center;">
+            <div class="statement-text" style="font-size: 32px; line-height: 1.35;">
+                Shingled Magnetic Recording (SMR) boosts physical disk capacity by 20&ndash;30%, but forbids random in-place overwrites.
+            </div>
+        </div>
+
+        <div class="grid-2 reveal" style="max-width: 1100px; width: 100%; margin: 0 auto; gap: 32px;">
+            <div class="card coral-border" style="padding: 32px 36px;">
+                <div style="font-family: var(--font-head); font-size: 26px; font-weight: 800; color: var(--accent-coral); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    The SMR Constraint
+                </div>
+                <div style="font-size: 18px; line-height: 1.5; color: var(--text-main);">
+                    Tracks overlap like shingles on a roof. Writing in the middle of a track corrupts adjacent tracks, requiring complex rewrite buffers in traditional databases.
+                </div>
+            </div>
+
+            <div class="card green-border" style="padding: 32px 36px;">
+                <div style="font-family: var(--font-head); font-size: 26px; font-weight: 800; color: var(--accent-green); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                    The Magic Pocket Synergy
+                </div>
+                <div style="font-size: 18px; line-height: 1.5; color: var(--text-main);">
+                    Dropbox blocks are <strong>100% immutable</strong>. Data is written sequentially once and never modified. Magic Pocket utilized SMR to extract immense storage density at rock-bottom cost.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 11 — The 500PB Migration</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Migrating 500PB: <span>Dark Launch &rarr; Full Cutover</span>
+            </h2>
+        </div>
+
+        <div class="grid-3 reveal" style="max-width: 1200px; width: 100%; margin: 0 auto; gap: 28px;">
+            <div class="card blue-border" style="padding: 28px;">
+                <div style="font-family: var(--font-head); font-size: 26px; font-weight: 800; color: var(--accent-blue); margin-bottom: 8px;">Phase 1</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main); margin-bottom: 10px;">Dual Write (Dark Launch)</div>
+                <div style="font-size: 16px; color: var(--text-muted); line-height: 1.5;">New client uploads were written simultaneously to AWS S3 and Magic Pocket without user impact.</div>
+            </div>
+
+            <div class="card amber-border" style="padding: 28px;">
+                <div style="font-family: var(--font-head); font-size: 26px; font-weight: 800; color: var(--accent-amber); margin-bottom: 8px;">Phase 2</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main); margin-bottom: 10px;">Silent Read Verification</div>
+                <div style="font-size: 16px; color: var(--text-muted); line-height: 1.5;">Data was read from both systems in background; checksums were strictly validated to guarantee byte-for-byte fidelity.</div>
+            </div>
+
+            <div class="card green-border" style="padding: 28px;">
+                <div style="font-family: var(--font-head); font-size: 26px; font-weight: 800; color: var(--accent-green); margin-bottom: 8px;">Phase 3</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main); margin-bottom: 10px;">Full Production Cutover</div>
+                <div style="font-size: 16px; color: var(--text-muted); line-height: 1.5;">Cut traffic over to serve 90%+ reads and writes natively from Magic Pocket without a single second of service disruption.</div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 12 — Financial Impact (S-1)</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; gap: 32px;">
+        <div style="text-align: center;">
+            <h2 class="slide-title reveal" style="font-size: 64px; margin-bottom: 0;">
+                Financial Reality: <span>S-1 IPO Filing (2018)</span>
+            </h2>
+        </div>
+
+        <div class="statement-box green-glow reveal" style="max-width: 1100px; margin: 0 auto; padding: 24px 36px; text-align: center;">
+            <div class="statement-text" style="font-size: 32px; line-height: 1.35;">
+                In their official S-1 IPO filing with the SEC, Dropbox documented the direct financial impact of repatriation.
+            </div>
+        </div>
+
+        <div class="grid-2 reveal" style="max-width: 1100px; width: 100%; margin: 0 auto; gap: 32px;">
+            <div class="card green-border" style="padding: 32px 36px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 52px; font-weight: 800; color: var(--accent-green); margin-bottom: 8px;">33% &rarr; 67%</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">Gross Margin Expansion</div>
+                <div style="font-size: 16px; color: var(--text-muted);">Gross margin doubled between 2015 and 2017, heavily driven by Magic Pocket efficiencies.</div>
+            </div>
+
+            <div class="card green-border" style="padding: 32px 36px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 52px; font-weight: 800; color: var(--accent-green); margin-bottom: 8px;">~$75M</div>
+                <div style="font-size: 20px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">Cumulative Cost Savings</div>
+                <div style="font-size: 16px; color: var(--text-muted);">Saved roughly $75 million in operating expenses over two years following migration.</div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 12 — Netflix vs Dropbox</div>
+    </div>
+    <div class="slide-body">
+        <h2 class="slide-title reveal" style="margin-bottom: 24px;">Netflix vs. Dropbox: <span>Two Distinct Bottlenecks</span></h2>
+
+        <div class="reveal">
+            <table class="scorecard-table">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Dimension</th>
+                        <th style="width: 37.5%; color: var(--accent-netflix);">NETFLIX (100% Cloud)</th>
+                        <th style="width: 37.5%; color: var(--accent-blue);">DROPBOX (Hybrid On-Prem)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="pain-cell">Primary Bottleneck</td>
+                        <td class="res-cell"><strong>Compute &amp; Elasticity:</strong> Bursty traffic, unpredictable member surges, global rapid launch</td>
+                        <td class="res-cell"><strong>Static Storage Cost:</strong> Exabytes of cold, predictable data accumulating linearly</td>
+                    </tr>
+                    <tr>
+                        <td class="pain-cell">Workload Dynamics</td>
+                        <td class="res-cell">Dynamic recommendation compute, hundreds of microservices, stateless logic</td>
+                        <td class="res-cell">Write-once, immutable 4MB binary file chunks with high retention periods</td>
+                    </tr>
+                    <tr>
+                        <td class="pain-cell">Strategic Choice</td>
+                        <td class="res-cell">100% AWS Cloud-Native + Open Connect CDN for edge delivery</td>
+                        <td class="res-cell">Custom On-Premises (Magic Pocket) for Data Plane + AWS for Control Plane</td>
+                    </tr>
+                    <tr>
+                        <td class="pain-cell">Core Business Why</td>
+                        <td class="res-cell">Differentiate on entertainment &amp; algorithms; delegate commodity infrastructure</td>
+                        <td class="res-cell">File storage IS the product; infrastructure margins directly dictate corporate survival</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+<section class="slide">
+    <div class="slide-header">
+        <div class="section-tag">Section 12 — Architectural Synthesis</div>
+    </div>
+    <div class="slide-body" style="display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 32px;">
+        <h2 class="slide-title reveal" style="font-size: 68px; margin-bottom: 0; text-align: center;">Architectural Synthesis: <span>Context is King</span></h2>
+
+        <div class="statement-box blue-glow reveal" style="max-width: 1100px; padding: 36px 48px; text-align: center;">
+            <div class="statement-text" style="font-size: 36px; line-height: 1.4;">
+                There is no dogmatic "right" answer in systems architecture.
+            </div>
+            <div class="statement-sub" style="font-size: 20px; color: var(--text-muted); margin-top: 8px;">
+                Cloud is not inherently cheaper or superior; data centers are not obsolete relics.
+            </div>
+        </div>
+
+        <div class="grid-2 reveal" style="max-width: 1100px; width: 100%; gap: 32px;">
+            <div class="card active-border" style="padding: 28px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 26px; font-weight: 800; color: var(--accent-netflix); margin-bottom: 8px;">When Cloud Wins</div>
+                <div style="font-size: 18px; color: var(--text-main); line-height: 1.5;">
+                    Dynamic compute, explosive unforecasted growth, global multi-region presence, and developer velocity.
+                </div>
+            </div>
+
+            <div class="card blue-border" style="padding: 28px; text-align: center;">
+                <div style="font-family: var(--font-head); font-size: 26px; font-weight: 800; color: var(--accent-blue); margin-bottom: 8px;">When Custom Wins</div>
+                <div style="font-size: 18px; color: var(--text-main); line-height: 1.5;">
+                    Predictable exabyte-scale workloads where infrastructure IS the core product and hardware specialization yields 10× margin arbitrage.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

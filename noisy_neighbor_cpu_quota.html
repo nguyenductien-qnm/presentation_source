@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noisy Neighbor & Resource Contention</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===========================================
+           1. THEME & CUSTOM PROPERTIES
+           =========================================== */
+        :root {
+            --stage-bg: #ffffff;
+            --slide-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --accent-amber: #d97706;
+            --accent-amber-glow: rgba(217, 119, 6, 0.08);
+            --accent-coral: #dc2626;
+            --accent-coral-glow: rgba(220, 38, 38, 0.08);
+            --accent-blue: #0284c7;
+            --accent-green: #059669;
+            --card-bg: #f8fafc;
+            --card-border: #cbd5e1;
+            --code-bg: #1e293b;
+            
+            --font-head: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+            
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ===========================================
+           2. MANDATORY VIEWPORT BASE STYLES
+           =========================================== */
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: var(--stage-bg);
+            font-family: var(--font-body);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .deck-viewport {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            background: var(--stage-bg);
+        }
+
+        .deck-stage {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            transform-origin: 0 0;
+            background: var(--slide-bg);
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 80px 120px;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            background: var(--slide-bg);
+            transition: opacity 0.4s var(--ease-out);
+        }
+
+        .slide.active,
+        .slide.visible {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 1;
+        }
+
+        /* ===========================================
+           3. LAYOUT & UI COMPONENTS
+           =========================================== */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--card-border);
+            padding-bottom: 24px;
+        }
+
+        .section-tag {
+            font-family: var(--font-body);
+            font-size: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--accent-amber);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-tag::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-amber);
+            box-shadow: 0 0 10px var(--accent-amber);
+        }
+
+        .slide-num {
+            font-family: var(--font-code);
+            font-size: 20px;
+            color: var(--text-muted);
+        }
+
+        .slide-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin: 40px 0;
+        }
+
+        .slide-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--card-border);
+            padding-top: 20px;
+            font-size: 20px;
+            color: var(--text-muted);
+        }
+
+        /* Typography */
+        h1.title-main {
+            font-family: var(--font-head);
+            font-size: 90px;
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: normal;
+            margin-bottom: 28px;
+        }
+
+        h1.title-main span {
+            color: var(--accent-amber);
+        }
+
+        h2.slide-title {
+            font-family: var(--font-head);
+            font-size: 60px;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: normal;
+            margin-bottom: 36px;
+            color: var(--text-main);
+        }
+
+        h2.slide-title span {
+            color: var(--accent-amber);
+        }
+
+        p.lead {
+            font-size: 36px;
+            line-height: 1.4;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .highlight-text {
+            color: var(--accent-amber);
+            font-weight: 700;
+        }
+
+        /* Statement Slide */
+        .statement-box {
+            text-align: center;
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 60px;
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .statement-box.amber-glow {
+            border-color: var(--accent-amber);
+            background: radial-gradient(circle at center, var(--accent-amber-glow) 0%, var(--card-bg) 70%);
+        }
+
+        .statement-text {
+            font-family: var(--font-head);
+            font-size: 64px;
+            font-weight: 700;
+            line-height: 1.25;
+            letter-spacing: normal;
+            color: var(--text-main);
+            margin-bottom: 24px;
+        }
+
+        .statement-sub {
+            font-size: 32px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Grid & Cards */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 36px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card.active-border {
+            border-color: var(--accent-amber);
+        }
+
+        .card-header {
+            font-family: var(--font-head);
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .card-body {
+            font-size: 26px;
+            line-height: 1.5;
+            color: var(--text-muted);
+        }
+
+        .card-body strong {
+            color: var(--text-main);
+        }
+
+        /* Data Tables */
+        table.styled-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+            font-size: 26px;
+        }
+
+        table.styled-table th {
+            background: #f1f5f9;
+            color: var(--accent-amber);
+            font-family: var(--font-head);
+            font-size: 30px;
+            font-weight: 700;
+            text-align: left;
+            padding: 24px 32px;
+            border-bottom: 2px solid var(--card-border);
+        }
+
+        table.styled-table td {
+            padding: 24px 32px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--card-border);
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        table.styled-table td strong {
+            color: var(--text-main);
+        }
+
+        table.styled-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Monospace / Terminal Box */
+        .code-block {
+            font-family: var(--font-code);
+            background: var(--code-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 28px 36px;
+            font-size: 26px;
+            color: var(--accent-green);
+            line-height: 1.6;
+        }
+
+        .code-block .comment {
+            color: #636e7b;
+        }
+
+        .code-block .cmd {
+            color: var(--accent-amber);
+        }
+
+        /* Timeline Widget (Slide 9) */
+        .timeline-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 44px;
+        }
+
+        .timeline-period {
+            margin-bottom: 36px;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-code);
+            font-size: 24px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .timeline-bar-wrapper {
+            position: relative;
+            height: 70px;
+            background: #f1f5f9;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            border: 1px solid var(--card-border);
+        }
+
+        .timeline-segment {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-head);
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .segment-run {
+            width: 50%;
+            background: rgba(16, 185, 129, 0.25);
+            border-right: 3px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .segment-throttle {
+            width: 50%;
+            background: rgba(239, 68, 68, 0.25);
+            color: var(--accent-coral);
+        }
+
+        /* Reveal Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out);
+        }
+
+        .slide.visible .reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal:nth-child(1) { transition-delay: 0.1s; }
+        .reveal:nth-child(2) { transition-delay: 0.2s; }
+        .reveal:nth-child(3) { transition-delay: 0.3s; }
+        .reveal:nth-child(4) { transition-delay: 0.4s; }
+
+        /* Navigation Controls */
+        .deck-controls {
+            position: fixed;
+            bottom: 24px;
+            right: 30px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 10px 20px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .deck-controls button {
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .deck-controls button:hover {
+            background: #e2e8f0;
+        }
+
+        .deck-progress {
+            font-family: var(--font-code);
+            font-size: 18px;
+            color: var(--text-muted);
+        }
+
+        /* Edit toggle zone */
+        .edit-hotzone {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 80px;
+            height: 80px;
+            z-index: 10000;
+            cursor: pointer;
+        }
+        .edit-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 10001;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: var(--font-code);
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .edit-toggle.show,
+        .edit-toggle.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        [contenteditable="true"] {
+            outline: 2px dashed var(--accent-amber) !important;
+            border-radius: 4px;
+        }
+
+        /* Print styles */
+        @media print {
+            html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+            .deck-viewport { position: static; overflow: visible; background: #fff; }
+            .deck-stage { position: static; width: auto; height: auto; transform: none !important; }
+            .slide { position: relative; display: flex !important; visibility: visible !important; opacity: 1 !important; page-break-after: always; width: 1920px; height: 1080px; }
+            .deck-controls, .edit-hotzone, .edit-toggle { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="edit-hotzone"></div>
+    <button class="edit-toggle" id="editToggle" title="Edit mode (E)">✏️ Edit Mode</button>
+
+    <div class="deck-viewport">
+        <main class="deck-stage" id="deckStage">
+
+            <!-- ================= SECTION 1: MỞ ĐẦU ================= -->
+
+            <!-- Slide 1 — Title slide -->
+            <section class="slide active visible" id="slide-1">
+                <div class="slide-header">
+                    <div class="section-tag">DevOps Tech Sharing</div>
+                    <div class="slide-num">01 / 24</div>
+                </div>
+                <div class="slide-body">
+                    <h1 class="title-main reveal">Noisy Neighbor &amp;<br><span>Resource Contention</span></h1>
+                </div>
+                <div class="slide-footer">
+                    <div>Audience: <strong>DevOps &amp; Backend Engineers</strong></div>
+                    <div>Duration: <strong>45 Minutes</strong></div>
+                </div>
+            </section>
+
+            <!-- Slide — Kiến trúc thực thi CPU: Từ Process đến Physical CPU -->
+            <section class="slide" id="slide-cpu-execution-layers">
+                <div class="slide-header">
+                    <div class="section-tag">Section 1 — Bản chất Kiến trúc</div>
+                    <div class="slide-num">02 / 23</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal" style="margin-bottom: 24px;">Luồng Thực Thi CPU: <span>Từ Process Đến Physical Core</span></h2>
+                    
+                    <div class="reveal" style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 1300px; margin: 0 auto;">
+                        
+                        <!-- BLOCK 1: TẦNG GUEST OS / CONTAINER -->
+                        <div class="card active-border" style="width: 100%; padding: 18px 28px; border-color: var(--accent-coral); background: rgba(220, 38, 38, 0.02);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--card-border); padding-bottom: 6px;">
+                                <span style="font-family: var(--font-head); font-size: 18px; font-weight: 700; color: var(--accent-coral); letter-spacing: 0.5px;">TẦNG GUEST OS / CONTAINER</span>
+                                <span class="badge badge-coral" style="font-size: 12px;">cgroup Boundary</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 40px 1.4fr; gap: 12px; align-items: center;">
+                                <!-- Step 1 -->
+                                <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 12px 18px;">
+                                    <div style="font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--accent-green);">1. Process (App)</div>
+                                    <div style="font-family: var(--font-code); font-size: 14px; color: var(--text-muted); margin-top: 2px;">Web, Database, Worker</div>
+                                </div>
+                                <!-- Arrow -->
+                                <div style="text-align: center; color: var(--accent-coral); font-size: 22px; font-weight: bold;">→</div>
+                                <!-- Step 2 -->
+                                <div style="background: var(--card-bg); border: 2px dashed var(--accent-coral); border-radius: 8px; padding: 12px 18px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--accent-coral);">2. Guest CFS Scheduler</span>
+                                        <span class="badge badge-coral" style="font-size: 13px; font-weight: 700; letter-spacing: 0.5px; background: rgba(220, 38, 38, 0.15); border: 1.5px solid var(--accent-coral);">THROTTLING</span>
+                                    </div>
+                                    <div style="font-size: 14px; color: var(--text-main); margin-top: 4px; line-height: 1.5;">
+                                        Schedule Process lên vCPU.<br>
+                                        <span style="color: var(--accent-coral); font-weight: 600;">CPU Quota/Limit</span> được enforce tại đây → <strong>CPU Throttling</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VERTICAL CONNECTOR DOWN -->
+                        <div style="display: flex; flex-direction: column; align-items: center; height: 32px; justify-content: center;">
+                            <span style="color: var(--accent-blue); font-size: 24px; line-height: 1; font-weight: bold;">↓</span>
+                        </div>
+
+                        <!-- BLOCK 2: vCPU (BRIDGE - ĐIỂM GIAO TIẾP DUY NHẤT) -->
+                        <div class="card active-border" style="width: 100%; padding: 18px 28px; border-color: var(--accent-blue); background: rgba(2, 132, 199, 0.05); box-shadow: 0 4px 16px rgba(2, 132, 199, 0.12);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 14px;">
+                                    <span style="background: var(--accent-blue); color: #fff; font-family: var(--font-code); font-weight: 700; font-size: 16px; padding: 4px 12px; border-radius: 6px;">3. vCPU</span>
+                                    <span style="font-family: var(--font-head); font-size: 21px; font-weight: 700; color: var(--accent-blue);">Cửa Khẩu &amp; Điểm Giao Tiếp Duy Nhất</span>
+                                </div>
+                                <span class="badge badge-blue" style="font-size: 12px;">Virtual Thread</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(2, 132, 199, 0.3);">
+                                <div style="font-size: 15px; color: var(--text-dark); line-height: 1.5;">
+                                    🔼 <strong>Góc nhìn Guest OS:</strong> Nhìn như một <strong>CPU core logic</strong> được cấp cho VM.
+                                </div>
+                                <div style="font-size: 15px; color: var(--text-dark); line-height: 1.5;">
+                                    🔽 <strong>Góc nhìn Host OS:</strong> vCPU được thực thi bởi một <strong>QEMU/KVM vCPU thread</strong>.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VERTICAL CONNECTOR DOWN -->
+                        <div style="display: flex; flex-direction: column; align-items: center; height: 32px; justify-content: center;">
+                            <span style="color: var(--accent-amber); font-size: 24px; line-height: 1; font-weight: bold;">↓</span>
+                        </div>
+
+                        <!-- BLOCK 3: TẦNG HYPERVISOR & HOST -->
+                        <div class="card active-border" style="width: 100%; padding: 18px 28px; border-color: var(--accent-amber); background: rgba(245, 158, 11, 0.02);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--card-border); padding-bottom: 6px;">
+                                <span style="font-family: var(--font-head); font-size: 18px; font-weight: 700; color: var(--accent-amber); letter-spacing: 0.5px;">TẦNG HYPERVISOR &amp; HOST VẬT LÝ</span>
+                                <span class="badge badge-amber" style="font-size: 12px;">Host Boundary</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1.4fr 40px 1fr; gap: 12px; align-items: center;">
+                                <!-- Step 4 -->
+                                <div style="background: var(--card-bg); border: 2px dashed var(--accent-amber); border-radius: 8px; padding: 12px 18px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--accent-amber);">4. Host CFS Scheduler</span>
+                                        <span class="badge badge-amber" style="font-size: 13px; font-weight: 700; letter-spacing: 0.5px; background: rgba(245, 158, 11, 0.15); border: 1.5px solid var(--accent-amber);">STEAL TIME</span>
+                                    </div>
+                                    <div style="font-size: 14px; color: var(--text-main); margin-top: 4px; line-height: 1.5;">
+                                        Host CFS schedule vCPU thread lên pCPU.<br>
+                                        <span style="color: var(--accent-amber); font-weight: 600;">Tenant khác tranh chấp CPU</span> → <strong>Steal Time (%st)</strong>
+                                    </div>
+                                </div>
+                                <!-- Arrow -->
+                                <div style="text-align: center; color: var(--accent-amber); font-size: 22px; font-weight: bold;">→</div>
+                                <!-- Step 5 -->
+                                <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 12px 18px;">
+                                    <div style="font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--accent-purple);">5. Physical CPU Core (pCPU)</div>
+                                    <div style="font-family: var(--font-code); font-size: 14px; color: var(--text-muted); margin-top: 2px;">Hardware execution resource</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>2-Level Scheduling Architecture</div>
+                    <div>Throttling (Guest Level) vs Steal Time (Host Level)</div>
+                </div>
+            </section>
+
+            <!-- Slide — Giải ảo: Physical Core vs vCPU -->
+            <section class="slide" id="slide-physical-cpu-vs-vcpu">
+                <div class="slide-header">
+                    <div class="section-tag">Section 1 — Bản chất Kiến trúc</div>
+                    <div class="slide-num">03 / 23</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">Giải Ảo: <span>1 Physical Core Có Bằng 1 vCPU?</span></h2>
+                    
+                    <div class="grid-2 reveal" style="margin-bottom: 24px;">
+                        <!-- Box 1: Hyper-Threading -->
+                        <div class="card active-border" style="padding: 24px; border-color: var(--accent-blue);">
+                            <div style="font-family: var(--font-head); font-size: 22px; font-weight: 700; color: var(--accent-blue); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">
+                                ⚙️ Hyper-Threading / SMT (Cơ chế phần cứng)
+                            </div>
+                            <div style="font-size: 16px; line-height: 1.6; color: var(--text-main);">
+                                • <strong>1 Physical Core = 2 Hardware Threads (Logical Cores)</strong>.<br>
+                                • Bộ tính toán (ALU, L1/L2 Cache) chỉ có <strong>1 bộ duy nhất</strong>, chỉ nhân bản thanh ghi trạng thái (Registers).<br>
+                                • 👉 <span class="highlight-text">Trên nhiều Cloud VM dùng SMT: 1 vCPU thường tương ứng 1 Hardware Thread.</span>
+                            </div>
+                        </div>
+
+                        <!-- Box 2: Performance & Reality -->
+                        <div class="card active-border" style="padding: 24px; border-color: var(--accent-amber);">
+                            <div style="font-family: var(--font-head); font-size: 22px; font-weight: 700; color: var(--accent-amber); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">
+                                💡 Thực Tế Hiệu Năng (Performance Trap)
+                            </div>
+                            <div style="font-size: 16px; line-height: 1.6; color: var(--text-main);">
+                                • <strong>2 vCPU không đồng nghĩa với 2 Physical Cores.</strong><br>
+                                • SMT có thể tăng throughput tùy workload, nhưng không tương đương thêm một physical core.<br>
+                                • Tác vụ nặng (DB, HPC, Crypto): Thường tắt SMT để tránh tranh chấp nội tại Core.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Equation Banner -->
+                    <div class="card reveal" style="padding: 18px 24px; text-align: center; border-color: var(--accent-purple); background: rgba(139, 92, 246, 0.04);">
+                        <div style="font-family: var(--font-code); font-size: 19px; color: var(--text-dark);">
+                            <span style="color: var(--accent-green); font-weight: 700;">1 Physical Core</span> 
+                            (1 Bộ Não) 
+                            <span style="color: var(--text-muted);"> ──[SMT]──► </span> 
+                            <span style="color: var(--accent-blue); font-weight: 700;">2 Hardware Threads</span> 
+                            (2 Cánh Tay) 
+                            <span style="color: var(--text-muted);"> ──[Cloud]──► </span> 
+                            <span style="color: var(--accent-coral); font-weight: 700;">2 vCPU</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Hardware Reality</div>
+                    <div>Physical Core vs Hardware Thread (SMT) vs vCPU</div>
+                </div>
+            </section>
+
+            <!-- ================= SECTION 2: CÁC KIỂU COMPUTE ================= -->
+
+            <!-- Slide 4 — 3 tier VPS/Compute -->
+            <section class="slide" id="slide-4">
+                <div class="slide-header">
+                    <div class="section-tag">Section 2 — Các kiểu Compute</div>
+                    <div class="slide-num">02 / 21</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">3 Tier Compute Phổ Biến</h2>
+                    <table class="styled-table reveal">
+                        <thead>
+                            <tr>
+                                <th>Tiêu chí</th>
+                                <th>Shared vCPU</th>
+                                <th>Dedicated vCPU / Pinning</th>
+                                <th>Dedicated Physical Server</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Chia sẻ Core</strong></td>
+                                <td>Nhiều VM dùng chung 1 physical core</td>
+                                <td>1 vCPU cố định 1 thread vật lý</td>
+                                <td>Toàn quyền sở hữu CPU vật lý</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Oversubscription</strong></td>
+                                <td>Có (Tùy provider / cấu hình)</td>
+                                <td>Thường không (Hoặc bị hạn chế)</td>
+                                <td>Không</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Giá tương đối</strong></td>
+                                <td><span class="highlight-text">$ (Rất rẻ)</span></td>
+                                <td>$$$ (Trung bình - Cao)</td>
+                                <td>$$$$$ (Rất đắt)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="card reveal" style="margin-top: 28px; padding: 20px; border-color: var(--accent-coral); background: rgba(220, 38, 38, 0.05);">
+                        <span style="font-size: 20px; color: var(--text-main);">
+                            ⚠️ <strong>Lưu ý:</strong> "Dedicated" chỉ cô lập <strong>CPU core</strong>. Network, Disk I/O và RAM Bandwidth vẫn có thể là <strong>shared</strong> giữa các VM trên cùng host.
+                        </span>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Compute Tiers Comparison</div>
+                    <div>16:9 Fixed Canvas</div>
+                </div>
+            </section>
+
+            <!-- Slide 3 — Đặt vấn đề -->
+            <section class="slide" id="slide-3">
+                <div class="slide-header">
+                    <div class="section-tag">Section 2 — Các kiểu Compute</div>
+                    <div class="slide-num">03 / 21</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">Bối cảnh VPS &amp; Cloud: <span>Sự Đánh Đổi</span></h2>
+                    <div class="grid-2 reveal">
+                        <div class="card active-border">
+                            <div class="card-header">Tại sao Shared vCPU rẻ?</div>
+                            <div class="card-body">
+                                Cho phép nhà cung cấp bán quá số lượng tài nguyên thực tế (<strong>Oversubscription</strong>). Tiết kiệm chi phí phần cứng tối đa.
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">Cái giá phải trả</div>
+                            <div class="card-body">
+                                Phải chia sẻ tài nguyên vật lý với các tenant khác. Hiệu năng phụ thuộc vào hành vi sử dụng của "hàng xóm".
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Compute Architecture</div>
+                    <div>Shared vs Dedicated</div>
+                </div>
+            </section>
+
+            <!-- ================= SECTION 3: NOISY NEIGHBOR & STEAL TIME (VẤN ĐỀ) ================= -->
+
+            <!-- Slide — Định nghĩa Noisy Neighbor -->
+            <section class="slide" id="slide-noisy-neighbor-def">
+                <div class="slide-header">
+                    <div class="section-tag">Section 3 — Noisy Neighbor &amp; Steal Time</div>
+                    <div class="slide-num">04 / 22</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">Định Nghĩa: <span>Noisy Neighbor</span></h2>
+                    <div class="grid-2 reveal">
+                        <div class="card active-border">
+                            <div class="card-header">Noisy Neighbor là gì?</div>
+                            <div class="card-body">
+                                Hiện tượng xảy ra khi nhiều VM/Container dùng chung host vật lý. Một bên chạy tải nặng chiếm dụng tài nguyên khiến các bên còn lại bị ảnh hưởng hiệu năng.
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">Đặc điểm nguy hiểm</div>
+                            <div class="card-body">
+                                Ứng dụng nạn nhân <strong>chưa vượt quá CPU limit của mình</strong>, nhưng vẫn bị chậm vì <strong>vCPU phải chờ được schedule lên physical CPU</strong> do tài nguyên CPU đang bị tenant khác cạnh tranh.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Resource Contention</div>
+                    <div>Multi-tenancy Issue</div>
+                </div>
+            </section>
+
+
+
+
+
+            <!-- Slide — CPU Steal Time (%st) là gì -->
+            <section class="slide" id="slide-steal-time-def">
+                <div class="slide-header">
+                    <div class="section-tag">Section 3 — Noisy Neighbor &amp; Steal Time</div>
+                    <div class="slide-num">08 / 22</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">CPU Steal Time (<span>%st</span>) Là Gì?</h2>
+                    <div class="reveal" style="max-width: 1000px; margin: 40px auto 0;">
+                        <div class="card active-border" style="padding: 36px 40px; border-color: var(--accent-amber); background: rgba(245, 158, 11, 0.03);">
+                            <div style="font-family: var(--font-head); font-size: 26px; font-weight: 700; color: var(--accent-amber); margin-bottom: 16px;">
+                                📊 Định nghĩa CPU Steal Time (%st)
+                            </div>
+                            <div style="font-size: 22px; line-height: 1.6; color: var(--text-dark);">
+                                Tỷ lệ % thời gian mà vCPU của bạn ở trạng thái <strong>sẵn sàng chạy (ready)</strong> nhưng phải chờ Hypervisor phân phối CPU vật lý từ Host do tài nguyên đang bị cạnh tranh.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Hypervisor Metric</div>
+                    <div>CPU Steal Time Breakdown</div>
+                </div>
+            </section>
+
+
+
+            <!-- Slide — Chuyển tiếp từ Vấn đề sang Giải pháp -->
+            <section class="slide" id="slide-transition-problem-to-solution">
+                <div class="slide-header">
+                    <div class="section-tag">Section 3 — Noisy Neighbor &amp; Steal Time</div>
+                    <div class="slide-num">10 / 22</div>
+                </div>
+                <div class="slide-body">
+                    <div class="statement-box amber-glow reveal">
+                        <div class="statement-text">"Vậy hệ thống &amp; kernel cgroup chống lại việc tranh chấp này bằng cách nào?"</div>
+                        <div class="statement-sub" style="margin-top: 28px;">
+                            👉 Quản lý &amp; Cân bằng tài nguyên bằng <span class="highlight-text">CPU Quota/Limit &amp; CPU Weight/Shares</span> (Section 4).
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Transition to Solution</div>
+                    <div>Control Mechanism Lead-in</div>
+                </div>
+            </section>
+
+            <!-- ================= SECTION 4: QUOTA/LIMIT & WEIGHT (GIẢI PHÁP) ================= -->
+
+            <!-- Slide — Khái niệm Period vs Quota -->
+            <section class="slide" id="slide-period-quota-concept">
+                <div class="slide-header">
+                    <div class="section-tag">Section 4 — Quota/Limit &amp; Weight</div>
+                    <div class="slide-num">11 / 22</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">Cơ Chế Khóa: <span>Period &amp; Quota</span></h2>
+                    <div class="grid-2 reveal">
+                        <div class="card">
+                            <div class="card-header">CPU Period</div>
+                            <div class="card-body">
+                                Khung thời gian kiểm soát thực tế của CFS scheduler. Mặc định Linux cgroup là <strong>100ms</strong> (100,000µs).
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">CPU Quota (Limit)</div>
+                            <div class="card-body">
+                                Tổng thời gian CPU (ms) tối đa được phép dùng trong 1 period. Cộng dồn từ <strong>tất cả các core</strong> chạy song song.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="code-block reveal" style="margin-top: 36px; text-align: center;">
+                        Công thức: <span class="cmd">quota (ms) = số vCPU × period × (limit % / 100)</span>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>cgroup Hard Limits</div>
+                    <div>CFS Bandwidth Control</div>
+                </div>
+            </section>
+
+            <!-- Slide — Sơ đồ Trực Quan vCPU Timeline -->
+            <section class="slide" id="slide-period-quota-diagram">
+                <div class="slide-header">
+                    <div class="section-tag">Section 4 — Quota/Limit &amp; Weight</div>
+                    <div class="slide-num">12 / 22</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal" style="margin-bottom: 32px;">Sơ Đồ Trực Quan: <span>Trục Thời Gian vCPU (Period 100ms)</span></h2>
+                    
+                    <!-- Top row: Case A & Case B -->
+                    <div class="grid-2 reveal" style="margin-bottom: 24px;">
+                        <!-- Case 1: 2 vCPU @ 100% -->
+                        <div class="card active-border" style="padding: 24px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                                <div style="font-family: var(--font-head); font-size: 24px; font-weight: 700; color: var(--accent-green);">Case A: 2 vCPU @ 100% Limit</div>
+                                <div style="font-family: var(--font-code); font-size: 18px; color: var(--text-muted);">Quota = <strong style="color: var(--accent-green);">200ms</strong></div>
+                            </div>
+                            
+                            <!-- vCPU 1 row -->
+                            <div style="margin-bottom: 16px;">
+                                <div style="font-family: var(--font-code); font-size: 15px; margin-bottom: 6px;">
+                                    <span>vCPU 1</span>
+                                </div>
+                                <div class="timeline-bar-wrapper" style="height: 44px;">
+                                    <div class="timeline-segment segment-run" style="width: 100%; font-size: 16px;">⚡ RUNNING (100ms)</div>
+                                </div>
+                            </div>
+
+                            <!-- vCPU 2 row -->
+                            <div>
+                                <div style="font-family: var(--font-code); font-size: 15px; margin-bottom: 6px;">
+                                    <span>vCPU 2</span>
+                                </div>
+                                <div class="timeline-bar-wrapper" style="height: 44px;">
+                                    <div class="timeline-segment segment-run" style="width: 100%; font-size: 16px;">⚡ RUNNING (100ms)</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Case 2: 2 vCPU @ 50% -->
+                        <div class="card" style="padding: 24px; border-color: var(--accent-coral);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                                <div style="font-family: var(--font-head); font-size: 24px; font-weight: 700; color: var(--accent-coral);">Case B: 2 vCPU @ 50% Limit</div>
+                                <div style="font-family: var(--font-code); font-size: 18px; color: var(--text-muted);">Quota = <strong style="color: var(--accent-coral);">100ms</strong></div>
+                            </div>
+
+                            <!-- vCPU 1 row -->
+                            <div style="margin-bottom: 16px;">
+                                <div style="font-family: var(--font-code); font-size: 15px; margin-bottom: 6px;">
+                                    <span>vCPU 1</span>
+                                </div>
+                                <div class="timeline-bar-wrapper" style="height: 44px;">
+                                    <div class="timeline-segment segment-run" style="width: 50%; font-size: 15px;">⚡ RUN (50ms)</div>
+                                    <div class="timeline-segment segment-throttle" style="width: 50%; font-size: 15px;">🚫 THROTTLED (50ms)</div>
+                                </div>
+                            </div>
+
+                            <!-- vCPU 2 row -->
+                            <div>
+                                <div style="font-family: var(--font-code); font-size: 15px; margin-bottom: 6px;">
+                                    <span>vCPU 2</span>
+                                </div>
+                                <div class="timeline-bar-wrapper" style="height: 44px;">
+                                    <div class="timeline-segment segment-run" style="width: 50%; font-size: 15px;">⚡ RUN (50ms)</div>
+                                    <div class="timeline-segment segment-throttle" style="width: 50%; font-size: 15px;">🚫 THROTTLED (50ms)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bottom row: Case C full width -->
+                    <div class="card reveal" style="padding: 28px; border-color: var(--accent-blue);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                            <div style="font-family: var(--font-head); font-size: 26px; font-weight: 700; color: var(--accent-blue);">Case C: 1 vCPU Shared Host (Multitenancy / Shared Core)</div>
+                            <div style="font-family: var(--font-code); font-size: 18px; color: var(--text-muted);">Time-slicing Hypervisor</div>
+                        </div>
+
+                        <!-- Physical Core Time-slicing bar -->
+                        <div>
+                            <div style="font-family: var(--font-code); font-size: 16px; margin-bottom: 6px;">
+                                <span>Physical Core (0ms - 100ms Period)</span>
+                            </div>
+                            <div class="timeline-bar-wrapper" style="height: 52px; font-size: 17px;">
+                                <div class="timeline-segment segment-run" style="width: 30%; background: rgba(16, 185, 129, 0.25); color: var(--accent-green);">Tenant A (30ms)</div>
+                                <div class="timeline-segment" style="width: 40%; background: rgba(245, 158, 11, 0.25); color: var(--accent-amber); border-right: 2px solid var(--accent-amber);">Tenant B (40ms)</div>
+                                <div class="timeline-segment" style="width: 30%; background: rgba(2, 132, 199, 0.25); color: var(--accent-blue);">Tenant C (30ms)</div>
+                            </div>
+                        </div>
+                        <div class="card reveal" style="margin-top: 18px; padding: 16px 20px; border-color: var(--accent-blue); background: rgba(2, 132, 199, 0.05);">
+                            <span style="font-size: 17px; color: var(--text-main);">
+                                👉 Nếu <strong>Tenant A = "App của bạn"</strong>: trong period này App chỉ chạy được 30ms — 70ms còn lại (B + C chiếm dụng) sẽ hiện trong <code style="color: var(--accent-blue);">/proc/stat</code> của App dưới dạng <strong style="color: var(--accent-blue);">Steal Time = 70%</strong>.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Visual Period &amp; Quota Mechanism</div>
+                    <div>cgroup CFS Bandwidth Control</div>
+                </div>
+            </section>
+
+            <!-- Slide — Quota là tổng, không phải theo từng core -->
+            <section class="slide" id="slide-quota-single-thread">
+                <div class="slide-header">
+                    <div class="section-tag">Section 4 — Quota/Limit &amp; Weight</div>
+                    <div class="slide-num">12b / 22</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal" style="margin-bottom: 28px;">Lưu Ý: <span>Quota Là Tổng, Không Phải Theo Từng Core</span></h2>
+                    <div class="card active-border reveal" style="padding: 24px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px;">
+                            <div style="font-family: var(--font-head); font-size: 24px; font-weight: 700; color: var(--accent-green);">Case D: 2 vCPU @ 50% Limit — Nhưng App chỉ Single-thread</div>
+                            <div style="font-family: var(--font-code); font-size: 18px; color: var(--text-muted);">Quota = <strong style="color: var(--accent-green);">100ms</strong></div>
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <div style="font-family: var(--font-code); font-size: 15px; margin-bottom: 6px;"><span>vCPU 1 (đang chạy full)</span></div>
+                            <div class="timeline-bar-wrapper" style="height: 44px;">
+                                <div class="timeline-segment segment-run" style="width: 100%; font-size: 16px;">⚡ RUNNING (100ms) — vừa khớp quota</div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-family: var(--font-code); font-size: 15px; margin-bottom: 6px;"><span>vCPU 2 (rảnh, không dùng đến)</span></div>
+                            <div class="timeline-bar-wrapper" style="height: 44px;">
+                                <div class="timeline-segment" style="width: 100%; font-size: 16px; background: rgba(148, 163, 184, 0.2); color: var(--text-muted);">IDLE — không tiêu quota</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card reveal" style="margin-top: 20px; padding: 20px; text-align: center; border-color: var(--accent-green); background: rgba(16, 185, 129, 0.05);">
+                        <span style="font-size: 20px; color: var(--text-main);">
+                            ✅ Chỉ dùng 1 core → tiêu đúng 100ms lúc hết period → <strong style="color: var(--accent-green);">KHÔNG bị throttle</strong>, dù limit chỉ 50%.
+                        </span>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Quota Budget ≠ Per-core Cap</div>
+                    <div>Application Threading Pattern Matters</div>
+                </div>
+            </section>
+
+            <!-- Slide — Điểm nhấn Policy Enforcement -->
+            <section class="slide" id="slide-policy-enforcement-aha">
+                <div class="slide-header">
+                    <div class="section-tag">Section 4 — Quota/Limit &amp; Weight</div>
+                    <div class="slide-num">13 / 22</div>
+                </div>
+                <div class="slide-body">
+                    <div class="statement-box amber-glow reveal">
+                        <div class="statement-text">"CPU vật lý có thể đang rảnh 100% ngay chính lúc ứng dụng của bạn bị THROTTLE!"</div>
+                        <div class="statement-sub" style="margin-top: 24px;">
+                            Throttling là giới hạn chính sách (<strong>Policy Enforcement / Limit Hard Cap</strong>) của cgroup kernel,<br>hoàn toàn không phải do máy chủ hết tài nguyên thật.
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Aha Moment</div>
+                    <div>Policy vs Capacity</div>
+                </div>
+            </section>
+
+            <!-- NEW SLIDE — Phân chia mềm: CPU Weight / CPU Shares -->
+            <section class="slide" id="slide-cpu-weight-shares">
+                <div class="slide-header">
+                    <div class="section-tag">Section 4 — Quota/Limit &amp; Weight</div>
+                    <div class="slide-num">14 / 22</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">Phân Chia Mềm: <span>CPU Weight / CPU Shares</span></h2>
+                    <div class="grid-2 reveal">
+                        <div class="card active-border">
+                            <div class="card-header" style="color: var(--accent-coral);">Hard Limit (CPU Quota)</div>
+                            <div class="card-body">
+                                • Giới hạn <strong>trần trên tuyệt đối</strong> (Upper Cap).<br>
+                                • Hết Quota là bị <strong>Throttle ngắt lập tức</strong>, bất kể Host đang rảnh 100% hay bận.
+                            </div>
+                        </div>
+                        <div class="card" style="border-color: var(--accent-amber);">
+                            <div class="card-header" style="color: var(--accent-amber);">Soft Limit (CPU Weight / Shares)</div>
+                            <div class="card-body">
+                                • Cấp phát tỷ trọng tương đối khi <strong>Host bị tranh chấp (Full Load)</strong>.<br>
+                                • `cpu.weight` (cgroup v2: 1-10000, default 100)<br>
+                                • `cpu.shares` (cgroup v1: default 1024)
+                            </div>
+                        </div>
+                    </div>
+                    <div class="code-block reveal" style="margin-top: 36px;">
+                        <span class="comment"># Ví dụ: Container A (Weight 100) vs Container B (Weight 300)</span><br>
+                        <span class="cmd">Tỷ lệ CPU phân chia khi Host bận: Container B nhận 75% CPU-time, Container A nhận 25% CPU-time</span>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Soft Limit vs Hard Limit</div>
+                    <div>cgroup v1 shares / cgroup v2 weight</div>
+                </div>
+            </section>
+
+
+
+            <!-- ================= SECTION 5: MỞ RỘNG ĐA CHIỀU ================= -->
+
+            <!-- Slide 17 — CPU Cache (L3/LLC) contention -->
+            <section class="slide" id="slide-17">
+                <div class="slide-header">
+                    <div class="section-tag">Section 5 — Mở rộng đa chiều</div>
+                    <div class="slide-num">17 / 24</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">CPU Cache (L3/LLC) Contention</h2>
+                    <div class="grid-2 reveal">
+                        <div class="card active-border">
+                            <div class="card-header">Cơ chế tranh chấp L3 Cache</div>
+                            <div class="card-body">
+                                Các CPU Cores trên cùng Socket chia sẻ chung bộ nhớ <strong>L3 (Last Level Cache)</strong>. Hàng xóm chạy ứng dụng cache-heavy làm tăng áp lực lên shared L3, khiến cache lines của app bị evict thường xuyên hơn.
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">Hệ quả</div>
+                            <div class="card-body">
+                                <strong>Cache Miss tăng</strong> → phải truy cập cache thấp hơn hoặc DRAM → latency tăng, throughput giảm. CPU % vẫn bình thường nhưng tốc độ xử lý giảm.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Hardware Level Contention</div>
+                    <div>L3 Cache Line Eviction</div>
+                </div>
+            </section>
+
+            <!-- Slide 18 — Disk IOPS -->
+            <section class="slide" id="slide-18">
+                <div class="slide-header">
+                    <div class="section-tag">Section 5 — Mở rộng đa chiều</div>
+                    <div class="slide-num">18 / 24</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">Tranh Chấp <span>Disk I/O &amp; I/O Wait</span></h2>
+                    <div class="grid-2 reveal">
+                        <div class="card active-border">
+                            <div class="card-header">cgroup I/O Limits</div>
+                            <div class="card-body">
+                                • <code style="color: var(--accent-amber);">io.max</code> → Giới hạn trần IOPS / Bandwidth.<br>
+                                • <code style="color: var(--accent-amber);">io.weight</code> → Phân bổ trọng số khi tranh chấp I/O.<br>
+                                • Tương tự CPU: <code>max</code> để giới hạn cứng, <code>weight</code> để phân bổ tương đối khi tranh chấp.
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">Chỉ số %wa (I/O Wait)</div>
+                            <div class="card-body">
+                                CPU idle trong khi hệ thống đang có I/O chưa hoàn tất.<br>
+                                <span class="highlight-text">%wa cao</span> có thể là dấu hiệu <strong>I/O bottleneck</strong>, không đồng nghĩa CPU quá tải.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Storage Contention</div>
+                    <div>I/O Weight &amp; Wait</div>
+                </div>
+            </section>
+
+            <!-- Slide — Memory Bandwidth Contention -->
+            <section class="slide" id="slide-memory-bandwidth-contention">
+                <div class="slide-header">
+                    <div class="section-tag">Section 5 — Mở rộng đa chiều</div>
+                    <div class="slide-num">16 / 23</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">Tranh Chấp <span>Memory Bandwidth</span></h2>
+                    
+                    <div class="grid-2 reveal" style="margin-bottom: 24px;">
+                        <!-- Box 1: Concept -->
+                        <div class="card active-border" style="padding: 24px; border-color: var(--accent-purple);">
+                            <div style="font-family: var(--font-head); font-size: 22px; font-weight: 700; color: var(--accent-purple); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">
+                                🧠 Bản chất: Băng Thông, Không Phải Dung Lượng
+                            </div>
+                            <div style="font-size: 16px; line-height: 1.6; color: var(--text-main);">
+                                • Dung lượng RAM (Capacity) đã được Hypervisor cấp phát riêng cho từng VM.<br>
+                                • Nhưng <strong>Memory Controller &amp; DRAM Bus</strong> là tài nguyên <strong>dùng chung (shared)</strong> giữa các socket/core.<br>
+                                • Hàng xóm chạy workload memory-intensive (quét bảng lớn, AI, in-memory cache) sẽ ngốn sạch băng thông bus.
+                            </div>
+                        </div>
+
+                        <!-- Box 2: Visual Flow -->
+                        <div class="card active-border" style="padding: 24px; border-color: var(--accent-coral);">
+                            <div style="font-family: var(--font-head); font-size: 22px; font-weight: 700; color: var(--accent-coral); margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">
+                                ⚠️ Dây Chuyền Tác Động (Chain Reaction)
+                            </div>
+                            <div style="background: rgba(0,0,0,0.03); border-radius: 8px; padding: 14px 18px; font-family: var(--font-code); font-size: 15px; line-height: 1.7; color: var(--text-dark);">
+                                VM A: Đọc/ghi RAM liên tục (Memory-heavy)<br>
+                                <span style="color: var(--text-muted);">───────────────►</span> A chiếm phần lớn Memory Bandwidth<br>
+                                <span style="color: var(--text-muted);">───────────────►</span> VM B truy cập RAM bị trễ (Wait cycles)<br>
+                                <span style="color: var(--accent-coral); font-weight: 700;">───────────────► Memory Latency ↑ / App Throughput ↓</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Takeaway Note -->
+                    <div class="card reveal" style="padding: 16px 24px; text-align: center; border-color: var(--accent-purple); background: rgba(139, 92, 246, 0.04);">
+                        <span style="font-size: 19px; color: var(--text-dark);">
+                            👉 <strong>Lưu ý cốt lõi:</strong> Không phải <em>"hàng xóm dùng nhiều RAM làm ta chậm"</em>, mà là <strong>"hàng xóm chiếm dụng hết băng thông Memory Controller"</strong>.
+                        </span>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Hardware Level Contention</div>
+                    <div>Shared Memory Controller &amp; DRAM Bus</div>
+                </div>
+            </section>
+
+            <!-- Slide 19 — Network -->
+            <section class="slide" id="slide-19">
+                <div class="slide-header">
+                    <div class="section-tag">Section 5 — Mở rộng đa chiều</div>
+                    <div class="slide-num">19 / 24</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">Băng Thông Network NIC Tranh Chấp</h2>
+                    <div class="statement-box reveal">
+                        <div class="statement-text">"Băng thông card mạng (NIC) dùng chung giữa các VM/Container"</div>
+                        <div class="statement-sub" style="margin-top: 24px;">
+                            Nếu Noisy Neighbor xả traffic lớn → Gây <strong>Packets Drop, Buffer Bloat</strong> và tăng Latency cho các ứng dụng còn lại trên cùng host.
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Network Contention</div>
+                    <div>Shared NIC Bandwidth</div>
+                </div>
+            </section>
+
+
+
+            <!-- ================= SECTION 6: LIÊN HỆ BUSINESS ================= -->
+
+            <!-- Slide 21 — Oversubscription là mô hình kinh doanh -->
+            <section class="slide" id="slide-21">
+                <div class="slide-header">
+                    <div class="section-tag">Section 6 — Liên hệ Business</div>
+                    <div class="slide-num">21 / 24</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">Oversubscription Là <span>Mô Hình Kinh Doanh</span></h2>
+                    <div class="grid-2 reveal">
+                        <div class="card">
+                            <div class="card-header">Đặt cược thống kê</div>
+                            <div class="card-body">
+                                Cloud provider đặt cược rằng không phải mọi khách hàng đều dùng 100% full tải cùng một lúc. Giúp hạ giá thành dịch vụ.
+                            </div>
+                        </div>
+                        <div class="card active-border">
+                            <div class="card-header">Quản trị rủi ro</div>
+                            <div class="card-body">
+                                Quota &amp; Weight chính là công cụ bảo vệ trải nghiệm chung, tạo ra sự phân cấp rõ ràng giữa các <strong>gói giá rẻ và gói cao cấp</strong>.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Business Perspective</div>
+                    <div>Statistical Capacity Allocation</div>
+                </div>
+            </section>
+
+            <!-- Slide 22 — Liên hệ thực tế: EKS/Kubernetes -->
+            <section class="slide" id="slide-22">
+                <div class="slide-header">
+                    <div class="section-tag">Section 6 — Liên hệ Business</div>
+                    <div class="slide-num">22 / 24</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">Liên Hệ Thực Tế: <span>Kubernetes (K8s)</span></h2>
+                    <div class="statement-box amber-glow reveal">
+                        <div class="statement-text">"Nhiều Pod share 1 Node y hệt như nhiều VM share 1 Host vật lý"</div>
+                        <div class="statement-sub" style="margin-top: 28px;">
+                            👉 Noisy Neighbor <strong>không tự mất đi</strong> khi lên Cloud lớn — nó chỉ dịch chuyển xuống tầng Pod.<br>Team phải tự quản lý bằng cách đặt <span class="highlight-text">CPU Requests &amp; Limits</span> hợp lý.
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Container Orchestration</div>
+                    <div>K8s Pod Limits &amp; Requests</div>
+                </div>
+            </section>
+
+            <!-- ================= SECTION 7: KẾT & Q&A ================= -->
+
+            <!-- Slide 23 — Tóm tắt 3 điều cần nhớ -->
+            <section class="slide" id="slide-23">
+                <div class="slide-header">
+                    <div class="section-tag">Section 7 — Kết luận</div>
+                    <div class="slide-num">23 / 24</div>
+                </div>
+                <div class="slide-body">
+                    <h2 class="slide-title reveal">3 Điều Quan Trọng Cần Nhớ</h2>
+                    <div class="grid-3 reveal">
+                        <div class="card active-border">
+                            <div class="card-header" style="color: var(--accent-amber);">01. Throttling ≠ Steal</div>
+                            <div class="card-body">
+                                Quota Throttling là do app vượt limit. Noisy Neighbor (Steal time) là do Host bị quá tải thực sự.
+                            </div>
+                        </div>
+                        <div class="card active-border">
+                            <div class="card-header" style="color: var(--accent-amber);">02. Theo dõi %st</div>
+                            <div class="card-body">
+                                CPU Steal Time (%st) là metric đáng tin cậy nhất để chứng minh tranh chấp tài nguyên vật lý.
+                            </div>
+                        </div>
+                        <div class="card active-border">
+                            <div class="card-header" style="color: var(--accent-amber);">03. K8s Governance</div>
+                            <div class="card-body">
+                                Lên Kubernetes vẫn bị Noisy Neighbor ở tầng Pod nếu không thiết lập Resource Requests / Limits chuẩn.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="slide-footer">
+                    <div>Summary</div>
+                    <div>Key Takeaways</div>
+                </div>
+            </section>
+
+            <!-- Slide 24 — Q&A -->
+            <section class="slide" id="slide-24">
+                <div class="slide-header">
+                    <div class="section-tag">Section 7 — Kết luận</div>
+                    <div class="slide-num">24 / 24</div>
+                </div>
+                <div class="slide-body" style="text-align: center;">
+                    <h1 class="title-main reveal" style="font-size: 140px; margin-bottom: 20px;">Q &amp; A</h1>
+                    <p class="lead reveal" style="font-size: 42px; color: var(--accent-amber);">Cảm ơn các bạn đã lắng nghe!</p>
+                    <p class="statement-sub reveal" style="margin-top: 30px;">Hỏi &amp; Đáp / Thảo luận kỹ thuật nội bộ DevOps Team</p>
+                </div>
+                <div class="slide-footer">
+                    <div>Closing</div>
+                    <div>DevOps Sharing Session</div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Navigation Overlay Controls -->
+    <div class="deck-controls">
+        <button id="prevBtn" title="Previous Slide (Left Arrow)">◄ Prev</button>
+        <span class="deck-progress" id="slideProgress">1 / 24</span>
+        <button id="nextBtn" title="Next Slide (Right Arrow / Space)">Next ►</button>
+    </div>
+
+    <!-- ===========================================
+       4. PRESENTATION CONTROLLER & SCALING JS
+       =========================================== -->
+    <script>
+        class SlidePresentation {
+            constructor() {
+                this.slides = Array.from(document.querySelectorAll('.slide'));
+                this.currentSlide = 0;
+                this.stage = document.getElementById('deckStage');
+                this.progressEl = document.getElementById('slideProgress');
+                
+                this.initScale();
+                this.initNav();
+                this.initInlineEditor();
+                this.showSlide(0);
+            }
+
+            initScale() {
+                const scale = () => {
+                    const factor = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+                    const x = (window.innerWidth - 1920 * factor) / 2;
+                    const y = (window.innerHeight - 1080 * factor) / 2;
+                    this.stage.style.transform = `translate(${x}px, ${y}px) scale(${factor})`;
+                };
+                scale();
+                window.addEventListener('resize', scale);
+            }
+
+            initNav() {
+                document.getElementById('prevBtn').addEventListener('click', () => this.prevSlide());
+                document.getElementById('nextBtn').addEventListener('click', () => this.nextSlide());
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.target.getAttribute('contenteditable') === 'true') return;
+                    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                        e.preventDefault();
+                        this.nextSlide();
+                    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                        e.preventDefault();
+                        this.prevSlide();
+                    } else if (e.key === 'Home') {
+                        this.showSlide(0);
+                    } else if (e.key === 'End') {
+                        this.showSlide(this.slides.length - 1);
+                    }
+                });
+
+                // Touch support
+                let startX = 0;
+                document.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+                document.addEventListener('touchend', (e) => {
+                    let diffX = e.changedTouches[0].clientX - startX;
+                    if (diffX < -50) this.nextSlide();
+                    if (diffX > 50) this.prevSlide();
+                }, { passive: true });
+            }
+
+            showSlide(index) {
+                this.currentSlide = Math.max(0, Math.min(index, this.slides.length - 1));
+                this.slides.forEach((slide, i) => {
+                    const isActive = i === this.currentSlide;
+                    slide.classList.toggle('active', isActive);
+                    slide.classList.toggle('visible', isActive);
+
+                    const slideNumEl = slide.querySelector('.slide-num');
+                    if (slideNumEl) {
+                        const curStr = String(i + 1).padStart(2, '0');
+                        const totStr = String(this.slides.length).padStart(2, '0');
+                        slideNumEl.textContent = `${curStr} / ${totStr}`;
+                    }
+                });
+                this.progressEl.textContent = `${this.currentSlide + 1} / ${this.slides.length}`;
+            }
+
+            nextSlide() { this.showSlide(this.currentSlide + 1); }
+            prevSlide() { this.showSlide(this.currentSlide - 1); }
+
+            initInlineEditor() {
+                const hotzone = document.querySelector('.edit-hotzone');
+                const editToggle = document.getElementById('editToggle');
+                let isEditing = false;
+                let hideTimeout = null;
+
+                const toggleEditMode = () => {
+                    isEditing = !isEditing;
+                    editToggle.classList.toggle('active', isEditing);
+                    editToggle.textContent = isEditing ? '💾 Save Mode' : '✏️ Edit Mode';
+                    
+                    const editableElements = document.querySelectorAll('h1, h2, p, td, th, div.card-header, div.card-body, div.statement-text, div.statement-sub');
+                    editableElements.forEach(el => {
+                        el.setAttribute('contenteditable', isEditing ? 'true' : 'false');
+                    });
+                };
+
+                hotzone.addEventListener('mouseenter', () => { clearTimeout(hideTimeout); editToggle.classList.add('show'); });
+                hotzone.addEventListener('mouseleave', () => { hideTimeout = setTimeout(() => { if (!isEditing) editToggle.classList.remove('show'); }, 400); });
+                editToggle.addEventListener('mouseenter', () => { clearTimeout(hideTimeout); });
+                editToggle.addEventListener('mouseleave', () => { hideTimeout = setTimeout(() => { if (!isEditing) editToggle.classList.remove('show'); }, 400); });
+                
+                hotzone.addEventListener('click', toggleEditMode);
+                editToggle.addEventListener('click', toggleEditMode);
+
+                document.addEventListener('keydown', (e) => {
+                    if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable')) {
+                        toggleEditMode();
+                    }
+                });
+            }
+        }
+
+        new SlidePresentation();
+    </script>
+</body>
+</html>

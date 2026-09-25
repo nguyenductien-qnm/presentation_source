@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS API Gateway — Beyond the HTTP Proxy</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --brand-primary: #0f172a;
+  --brand-accent: #f59e0b;
+  --brand-accent-2: #fb923c;
+  --brand-secondary: #2563eb;
+  --brand-danger: #ef4444;
+  --brand-success: #22c55e;
+  --brand-purple: #9333ea;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border: #e2e8f0;
+  --surface-dark: #ffffff;
+  --surface-card: #f8fafc;
+  --gradient-warm: linear-gradient(135deg, #f59e0b, #ef4444);
+  --gradient-blue: linear-gradient(135deg, #2563eb, #9333ea);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-snap-type: y mandatory; scroll-behavior: smooth; overflow-x: hidden; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--surface-dark); color: var(--text-primary); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+.slide { scroll-snap-align: start; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 32px 48px; position: relative; overflow: hidden; background: #ffffff; }
+.slide-title { background: radial-gradient(circle at 90% 10%, rgba(37,99,235,0.05) 0%, transparent 60%), radial-gradient(circle at 10% 90%, rgba(245,158,11,0.05) 0%, transparent 60%); justify-content: center; align-items: center; text-align: center; }
+.slide-divider { background: var(--brand-primary); color: #ffffff; justify-content: center; align-items: center; text-align: center; }
+
+.slide-content { flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 1200px; width: 100%; margin: 0 auto; }
+.slide-header { margin-bottom: 20px; }
+.eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: 700; color: var(--brand-secondary); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+h1 { font-size: clamp(2.4rem, 4.5vw, 3.8rem); font-weight: 800; line-height: 1.15; color: var(--brand-primary); margin-bottom: 16px; }
+h2 { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 800; color: var(--brand-primary); line-height: 1.25; }
+.lead { font-size: clamp(0.95rem, 1.4vw, 1.15rem); color: var(--text-secondary); margin-top: 6px; font-weight: 500; }
+
+.grid { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+.card { background: var(--surface-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+.card-accent { border-left: 4px solid var(--brand-accent); }
+.card-blue { border-left: 4px solid var(--brand-secondary); }
+.card-purple { border-left: 4px solid var(--brand-purple); }
+.card-success { border-left: 4px solid var(--brand-success); }
+.card-danger { border-left: 4px solid var(--brand-danger); }
+
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 700; }
+.badge-blue { background: rgba(37,99,235,0.1); color: var(--brand-secondary); }
+.badge-accent { background: rgba(245,158,11,0.1); color: var(--brand-accent); }
+.badge-danger { background: rgba(239,68,68,0.1); color: var(--brand-danger); }
+.badge-success { background: rgba(34,197,94,0.1); color: var(--brand-success); }
+.badge-purple { background: rgba(147,51,234,0.1); color: var(--brand-purple); }
+
+.comp-table { width: 100%; border-collapse: collapse; background: var(--surface-card); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+.comp-table th, .comp-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.98rem; line-height: 1.45; }
+.comp-table th { background: rgba(15,23,42,0.03); font-weight: 800; font-size: 1.08rem; color: var(--text-primary); }
+
+.code-block { font-family: 'JetBrains Mono', monospace; font-size: 1.05rem; background: #0f172a; color: #f8fafc; padding: 14px; border-radius: 10px; line-height: 1.45; overflow-x: auto; }
+.code-block .str { color: #38bdf8; }
+.code-block .kw { color: #f43f5e; }
+.code-block .cmt { color: #64748b; font-style: italic; }
+
+.gradient-text { background: var(--gradient-blue); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.slide-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 16px; }
+
+.meta-chips { display: flex; gap: 12px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
+.chip { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 20px; padding: 6px 16px; font-size: 1.05rem; color: #475569; font-weight: 600; }
+.chip strong { color: #0f172a; }
+
+.progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: var(--gradient-warm); z-index: 1000; width: 0%; transition: width 0.3s; }
+.nav-dots { position: fixed; right: 20px; top: 50%; transform: translateY(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 6px; }
+.nav-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(148,163,184,0.3); cursor: pointer; transition: all 0.3s; border: none; padding: 0; }
+.nav-dot.active { background: var(--brand-accent); transform: scale(1.4); }
+.slide-counter { position: fixed; bottom: 16px; right: 20px; font-family: 'JetBrains Mono', monospace; font-size: 1.05rem; color: var(--text-muted); z-index: 1000; }
+.slide-counter strong { color: var(--text-primary); }
+
+code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: rgba(51,65,85,0.08); padding: 2px 5px; border-radius: 4px; color:#0f172a; }
+@media (max-width: 767px) { .grid-2,.grid-3,.grid-4{grid-template-columns:1fr;} .nav-dots{display:none;} }
+</style>
+<script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+<div class="progress-bar" id="progress"></div>
+<nav class="nav-dots" id="navDots"></nav>
+<div class="slide-counter" id="counter"><strong>01</strong> / 20</div>
+
+<!-- Slide 01: Title -->
+<section class="slide slide-title">
+  <div class="eyebrow">AWS Serverless &amp; API Architecture</div>
+  <h1><span class="gradient-text">AWS API GATEWAY</span><br>Không Chỉ Là HTTP Proxy</h1>
+  <p class="lead">Beyond the HTTP Proxy: Request Flows, Transformations &amp; Production Architecture</p>
+  <div class="meta-chips">
+    <div class="chip"><strong>Topic</strong> AWS API Gateway + Lambda</div>
+    <div class="chip"><strong>Level</strong> Technical Sharing &amp; Architecture</div>
+    <div class="chip"><strong>Focus</strong> Boundaries, VTL, Security &amp; Proxy Mechanics</div>
+  </div>
+</section>
+
+<!-- Slide 02: Section 01 Incident Hook -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header" style="text-align: center;">
+      <div class="eyebrow" style="color: var(--brand-accent); font-weight: 800;">SECTION 01 · PRODUCTION SCENARIO</div>
+      <h2 style="font-size: clamp(1.8rem, 3vw, 2.5rem); font-weight: 800; margin-top: 4px;">Sự cố 10:00 AM thứ Hai trên Production</h2>
+      <p class="lead" style="max-width: 820px; margin: 6px auto 0;">Khi công cụ giám sát thông thường hoàn toàn "vô hình" — Client văng 502 Bad Gateway nhưng CloudWatch Logs báo Success 200 OK sạch trơn.</p>
+    </div>
+    <div class="grid grid-2" style="gap:24px; margin-top: 24px;">
+      <div class="card card-danger" style="background:rgba(239,68,68,0.03); padding:24px 28px;">
+        <h3 style="color:var(--brand-danger); display:flex; align-items:center; gap:10px; font-size:1.35rem; font-weight:700;">
+          <i data-lucide="alert-triangle" style="width:26px; height:26px;"></i> Client văng lỗi hàng loạt
+        </h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:14px; margin-top:16px; font-size:1.1rem; line-height:1.5;">
+          <li>• Mobile App &amp; Web báo <span class="badge badge-danger" style="font-size:1rem; padding:4px 10px;">502 Bad Gateway</span> liên tục.</li>
+          <li>• Giao dịch checkout bị gián đoạn hoàn toàn.</li>
+          <li>• Sếp hỏi: <i>"Lỗi Lambda hay Backend, sửa ngay đi!"</i></li>
+        </ul>
+      </div>
+      <div class="card card-success" style="background:rgba(34,197,94,0.03); padding:24px 28px;">
+        <h3 style="color:var(--brand-success); display:flex; align-items:center; gap:10px; font-size:1.35rem; font-weight:700;">
+          <i data-lucide="check-circle-2" style="width:26px; height:26px;"></i> Lambda CloudWatch Logs
+        </h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:14px; margin-top:16px; font-size:1.1rem; line-height:1.5;">
+          <li>• Status: <span class="badge badge-success" style="font-size:1rem; padding:4px 10px;">Success / 200 OK</span></li>
+          <li>• Traceback: <strong style="color:var(--brand-success);">0 lỗi</strong>, log sạch trơn!</li>
+          <li>• Duration &amp; Memory: Hoàn toàn bình thường.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer"><span>02 — Production Scenario</span></div>
+</section>
+
+
+
+<!-- Slide 04: Decision Tree -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header" style="margin-bottom:14px;">
+      <div class="eyebrow">Architecture Decision Tree</div>
+      <h2>Requirement Nào KHIẾN HTTP API Không Đáp Ứng Được?</h2>
+      <p class="lead">Đừng đọc thuộc lòng tính năng. Hãy bắt đầu từ yêu cầu hệ thống thực tế.</p>
+    </div>
+    
+    <div class="grid grid-2" style="gap:24px; margin-bottom:20px;">
+      <div class="card card-purple" style="padding:24px 28px;">
+        <h3 style="color:var(--brand-purple); font-size:1.35rem; font-weight:700; margin-bottom:14px;">Khi nào REST API là lựa chọn phù hợp?</h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:12px; font-size:1.1rem; line-height:1.5; color:var(--text-secondary);">
+          <li>🔥 Hệ thống phụ thuộc vào <strong>AWS WAF Association</strong> trực tiếp ở Gateway?</li>
+          <li>🔑 Cần <strong>API Keys / Usage Plans</strong> cho B2B Consumer metering?</li>
+          <li>🔄 Cần <strong>Programmable VTL Payload Transformation</strong>?</li>
+          <li>🏢 Cần <strong>Private API Endpoint</strong> trong VPC?</li>
+          <li>⚡ Cần <strong>Caching / Canary Release / Custom 4xx/5xx Responses</strong>?</li>
+        </ul>
+      </div>
+
+      <div class="card card-success" style="padding:24px 28px; background:rgba(34,197,94,0.02);">
+        <h3 style="color:var(--brand-success); font-size:1.35rem; font-weight:700; margin-bottom:14px;">Khi nào nên ưu tiên chọn HTTP API?</h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:12px; font-size:1.1rem; line-height:1.5; color:var(--text-secondary);">
+          <li>✨ Serverless Microservices tiêu chuẩn (Proxy sang Lambda/HTTP).</li>
+          <li>💰 Ưu tiên chi phí request thấp hơn &amp; đơn giản hóa kiến trúc.</li>
+          <li>⚡ Ưu tiên API Gateway đơn giản và lightweight.</li>
+          <li>🔐 Dùng Native JWT / OIDC Authorizer (Auth0, Okta, Cognito).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer"><span>03 — Architecture Decision Tree</span></div>
+</section>
+
+<!-- Slide 05: Comparison Table -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header" style="margin-bottom:10px;">
+      <div class="eyebrow">Comparison Evidence</div>
+      <h2>Bảng So Sánh: REST API vs HTTP API</h2>
+      <p class="lead">Minh chứng kỹ thuật chi tiết chuẩn hóa theo AWS Official Docs.</p>
+    </div>
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Tiêu chí</th>
+          <th style="color:var(--brand-secondary);">REST API (Feature-rich)</th>
+          <th style="color:var(--brand-success);">HTTP API (Lightweight / Cost-efficient)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Chi phí base</strong></td>
+          <td><strong>$3.50</strong> / 1M requests*</td>
+          <td><strong style="color:var(--brand-success);">$1.00</strong> / 1M requests*</td>
+        </tr>
+        <tr>
+          <td><strong>Payload Transformation</strong></td>
+          <td><strong>VTL Mapping Templates</strong> — programmable JSON payload transformation</td>
+          <td><strong>Parameter Mapping</strong> — header/query/path &amp; selected body properties (Không VTL)</td>
+        </tr>
+        <tr>
+          <td><strong>Auth &amp; Authorization</strong></td>
+          <td>IAM, Cognito User Pools, Lambda Authorizer</td>
+          <td>IAM, JWT Authorizer (OIDC), Lambda Authorizer</td>
+        </tr>
+        <tr>
+          <td><strong>Throttling &amp; Quotas</strong></td>
+          <td>API Keys + Usage Plans + per-consumer throttling</td>
+          <td>Account + Route-level throttling (HTTP API capability limitation: No API Keys / Usage Plans)</td>
+        </tr>
+        <tr>
+          <td><strong>AWS WAF Support</strong></td>
+          <td><strong style="color:var(--brand-success);">✅ Native WebACL Association</strong></td>
+          <td><strong style="color:var(--brand-danger);">❌ Không có native integration</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Built-in Caching</strong></td>
+          <td><strong style="color:var(--brand-success);">✅ Có (Cache tại Stage/Method)</strong></td>
+          <td><strong style="color:var(--brand-danger);">❌ Không</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Request Validation</strong></td>
+          <td><strong style="color:var(--brand-success);">✅ Có (Parameters &amp; JSON Schema)</strong></td>
+          <td><strong style="color:var(--brand-danger);">❌ Không</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Private API Endpoint</strong></td>
+          <td><strong style="color:var(--brand-success);">✅ Có (VPC Endpoint)</strong></td>
+          <td><strong style="color:var(--brand-danger);">❌ Không</strong> (Chỉ có Regional Endpoint)</td>
+        </tr>
+        <tr>
+          <td><strong>Automatic Deployment</strong></td>
+          <td><strong style="color:var(--brand-danger);">❌ Không</strong></td>
+          <td><strong style="color:var(--brand-success);">✅ Có (Default)</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Canary Deployment</strong></td>
+          <td><strong style="color:var(--brand-success);">✅ Có</strong></td>
+          <td><strong style="color:var(--brand-danger);">❌ Không</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Custom Gateway Responses</strong></td>
+          <td><strong style="color:var(--brand-success);">✅ Có (Custom 4xx/5xx responses)</strong></td>
+          <td><strong style="color:var(--brand-danger);">❌ Không</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div class="grid grid-2" style="margin-top:14px; gap:14px; align-items:center;">
+      <div class="card" style="padding:12px 18px; background:rgba(37,99,235,0.06); border-left:4px solid var(--brand-secondary);">
+        <p style="font-size:1rem; margin:0; line-height:1.45;">
+          💡 <strong>Practical Decision Rule:</strong> Ưu tiên chọn <strong>HTTP API làm mặc định</strong>. Chỉ chọn <strong>REST API</strong> khi hệ thống phụ thuộc vào capability chỉ có trên REST API.
+        </p>
+      </div>
+      <div class="card" style="padding:12px 18px; background:rgba(15,23,42,0.03); border-left:4px solid var(--brand-accent);">
+        <p style="font-size:1rem; margin:0; color:var(--text-secondary); line-height:1.45;">
+          🔗 <strong>References:</strong> 
+          <a href="https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-vs-rest.html" target="_blank" style="color:var(--brand-secondary); font-weight:bold; text-decoration:underline; margin-right:10px;">AWS Developer Guide</a> | 
+          <a href="https://kkloudtarus.net/blog/api-gateway-http-vs-rest-api" target="_blank" style="color:var(--brand-accent); font-weight:bold; text-decoration:underline; margin-left:6px;">KKloudtarus Blog Guide</a><br>
+          <span style="font-size:0.85rem; color:var(--text-muted);">* Typical regional pricing — verify current AWS pricing before production estimation.</span>
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer"><span>04 — REST vs HTTP Comparison Evidence</span></div>
+</section>
+
+<!-- Slide 06: 4-Stage AWS Console Diagram -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header" style="margin-bottom: 24px;">
+      <div class="eyebrow">AWS Console Architecture</div>
+      <h2>REST API – Request/Response Processing Model</h2>
+      <p class="lead"><strong>Method Layer</strong> = Client-facing API configuration | <strong>Integration Layer</strong> = Backend integration &amp; request/response mapping.</p>
+    </div>
+    
+    <div style="background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 16px; padding: 28px 36px; display: flex; align-items: center; justify-content: space-between; gap: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+      
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <span class="badge badge-blue" style="font-size: 0.85rem; padding: 6px 12px;">── Phía CLIENT ──</span>
+        <div style="width: 130px; height: 210px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: #0f172a; font-weight: 700; font-size: 1.05rem;">
+          <i data-lucide="monitor" style="width: 44px; height: 44px; color: #475569;"></i>
+          <span>Client</span>
+        </div>
+      </div>
+
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 22px; padding: 0 10px;">
+        
+        <div style="display: flex; align-items: stretch; gap: 16px;">
+          <div style="color: #94a3b8; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center;">➔</div>
+          
+          <div style="flex: 1; background: #ffffff; border: 1.5px solid #2563eb; border-radius: 12px; padding: 16px 18px; min-height: 140px; display: flex; flex-direction: column; justify-content: flex-start; box-shadow: 0 2px 10px rgba(37,99,235,0.08); overflow: hidden;">
+            <div style="font-weight: 800; font-size: 1.05rem; color: #1d4ed8; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span>Method request</span>
+              <span class="badge badge-blue" style="font-size: 0.8rem; white-space: nowrap;">Client Contract</span>
+            </div>
+            <div style="font-size: 1.05rem; color: #475569; line-height: 1.45;">
+              • Cấu hình Auth / API Key.<br>
+              • Request Validation (Parameters, Headers, Schema).
+            </div>
+          </div>
+          
+          <div style="color: #94a3b8; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center;">➔</div>
+
+          <div style="flex: 1; background: #ffffff; border: 1.5px solid #9333ea; border-radius: 12px; padding: 16px 18px; min-height: 140px; display: flex; flex-direction: column; justify-content: flex-start; box-shadow: 0 2px 10px rgba(147,51,234,0.08); overflow: hidden;">
+            <div style="font-weight: 800; font-size: 1.05rem; color: #7e22ce; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span>Integration request</span>
+              <span class="badge badge-purple" style="font-size: 0.8rem; white-space: nowrap;">VTL Transform</span>
+            </div>
+            <div style="font-size: 1.05rem; color: #475569; line-height: 1.45;">
+              • <strong>Đóng gói payload:</strong> Biến đổi VTL JSON.<br>
+              • Khai báo Lambda target &amp; Timeout.
+            </div>
+          </div>
+
+          <div style="color: #94a3b8; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center;">➔</div>
+        </div>
+
+        <div style="display: flex; align-items: stretch; gap: 16px;">
+          <div style="color: #94a3b8; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center;">←</div>
+
+          <div style="flex: 1; background: #ffffff; border: 1.5px solid #2563eb; border-radius: 12px; padding: 16px 18px; min-height: 140px; display: flex; flex-direction: column; justify-content: flex-start; box-shadow: 0 2px 10px rgba(37,99,235,0.08); overflow: hidden;">
+            <div style="font-weight: 800; font-size: 1.05rem; color: #1d4ed8; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span>Method response</span>
+              <span class="badge badge-blue" style="font-size: 0.8rem; white-space: nowrap;">Trả Client</span>
+            </div>
+            <div style="font-size: 1.05rem; color: #475569; line-height: 1.45;">
+              • Đăng ký mã HTTP trả ra (200, 400, 500).<br>
+              • Khai báo Response Headers (CORS).
+            </div>
+          </div>
+          
+          <div style="color: #94a3b8; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center;">←</div>
+
+          <div style="flex: 1; background: #ffffff; border: 1.5px solid #9333ea; border-radius: 12px; padding: 16px 18px; min-height: 140px; display: flex; flex-direction: column; justify-content: flex-start; box-shadow: 0 2px 10px rgba(147,51,234,0.08); overflow: hidden;">
+            <div style="font-weight: 800; font-size: 1.05rem; color: #7e22ce; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span>Integration response</span>
+              <span class="badge badge-purple" style="font-size: 0.8rem; white-space: nowrap;">VTL Transform</span>
+            </div>
+            <div style="font-size: 1.05rem; color: #475569; line-height: 1.45;">
+              • Bắt selectionPattern Regex từ Backend.<br>
+              • Map sang HTTP Status Code của Method.
+            </div>
+          </div>
+
+          <div style="color: #94a3b8; font-size: 1.5rem; font-weight: bold; display: flex; align-items: center;">←</div>
+        </div>
+
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <span class="badge badge-accent" style="font-size: 0.85rem; padding: 6px 12px;">── Phía BACKEND ──</span>
+        <div style="width: 130px; height: 210px; background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: #b45309; font-weight: 700; font-size: 1.05rem;">
+          <i data-lucide="cpu" style="width: 44px; height: 44px; color: #d97706;"></i>
+          <span>Lambda</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="slide-footer"><span>05 — Request/Response Processing Model</span></div>
+</section>
+
+<!-- Slide 07: Transformation Deep Dive -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header" style="margin-bottom:12px;">
+      <div class="eyebrow">Capability Deep-Dive</div>
+      <h2>Transformation: VTL Mapping vs Parameter Mapping</h2>
+      <p class="lead">Parameter Mapping ≠ VTL. Limited parameter transformation vs Programmable template transformation.</p>
+    </div>
+    
+    <div class="grid grid-2" style="gap:14px; margin-bottom:12px;">
+      <div class="card card-purple" style="padding:14px;">
+        <h3 style="color:var(--brand-purple); font-size:1.35rem; font-weight:700; margin-bottom:6px;">REST API: VTL Mapping Template</h3>
+        <div class="code-block" style="font-size:0.92rem; padding:14px; margin-bottom:10px; line-height:1.5; white-space:pre;"><span class="cmt">// VTL Mapping Template (REST API)</span>
+{
+  <span class="str">"userId"</span>: <span class="str">"$input.path('$.user_id')"</span>,
+  <span class="str">"items"</span>: [
+    <span class="kw">#foreach</span>($item in $input.path(<span class="str">'$.items'</span>))
+      { <span class="str">"code"</span>: <span class="str">"$item.id"</span>, <span class="str">"qty"</span>: $item.count }<span class="kw">#if</span>($foreach.hasNext),<span class="kw">#end</span>
+    <span class="kw">#end</span>
+  ]
+}</div>
+        <p style="font-size:1.05rem; color:var(--text-secondary); margin:0;">
+          • Programmable request/response transformation using VTL.<br>
+          • Can construct a new payload shape from incoming request.
+        </p>
+      </div>
+
+      <div class="card card-success" style="padding:14px; background:rgba(34,197,94,0.02);">
+        <h3 style="color:var(--brand-success); font-size:1.35rem; font-weight:700; margin-bottom:6px;">HTTP API: Parameter Mapping</h3>
+        <div class="code-block" style="font-size:0.92rem; padding:14px; margin-bottom:10px; line-height:1.5; white-space:pre;"><span class="cmt">// Parameter Mapping Rules (HTTP API)</span>
+request.header.X-User-Id  <span class="str">← $request.body.userId</span>
+request.querystring.page  <span class="str">← $request.querystring.p</span>
+overwrite:statuscode      <span class="str">← 200</span></div>
+        <p style="font-size:1.05rem; color:var(--text-secondary); margin:0;">
+          • Trích xuất / đổi tên Header, Query, Path &amp; Selected body properties.<br>
+          • ❌ Không hỗ trợ REST API-style programmable body transformation bằng VTL.
+        </p>
+      </div>
+    </div>
+
+    <table class="comp-table" style="font-size:1.05rem;">
+      <thead>
+        <tr>
+          <th style="width:20%;">Đặc tính</th>
+          <th style="color:var(--brand-purple); width:40%;">REST API: VTL Mapping Template</th>
+          <th style="color:var(--brand-success); width:40%;">HTTP API: Parameter Mapping</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Bản chất Engine</strong></td>
+          <td>Full Template Language (Velocity Engine)</td>
+          <td>Limited Parameter Transformation Engine</td>
+        </tr>
+        <tr>
+          <td><strong>Logic &amp; Vòng lặp</strong></td>
+          <td><strong style="color:var(--brand-success);">✅ Có</strong> (Vòng lặp <code>#foreach</code>, rẽ nhánh <code>#if</code>)</td>
+          <td><strong style="color:var(--brand-danger);">❌ Không</strong> có programmable logic / loop / conditional template</td>
+        </tr>
+        <tr>
+          <td><strong>Rebuild JSON Body</strong></td>
+          <td><strong style="color:var(--brand-success);">✅ Arbitrary Rebuild JSON Body</strong></td>
+          <td><strong style="color:var(--brand-danger);">❌ Không thể arbitrary rebuild JSON body</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card" style="margin-top:12px; padding:10px 18px; background:rgba(147,51,234,0.03); border-left:4px solid var(--brand-purple);">
+      <p style="font-size:0.95rem; margin:0; color:var(--text-secondary);">
+        🔗 <strong>VTL Syntax Reference:</strong> <a href="https://velocity.apache.org/engine/1.7/vtl-reference.html" target="_blank" style="color:var(--brand-purple); font-weight:bold; text-decoration:underline;">Apache Velocity VTL Reference Guide (v1.7)</a>
+      </p>
+    </div>
+  </div>
+  <div class="slide-footer"><span>06 — Transformation Capability Deep-Dive</span></div>
+</section>
+
+<!-- Slide 08: Merged Security & API Key Abstraction -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header" style="margin-bottom:16px;">
+      <div class="eyebrow">API Security Architecture</div>
+      <h2>API Security Architecture &amp; Identity Abstraction</h2>
+      <p class="lead">Phân rã AuthN, AuthZ, Abuse Protection &amp; Bản chất API Key vs User Identity.</p>
+    </div>
+    
+    <div class="grid grid-3" style="gap:16px; align-items:stretch;">
+      <div class="card card-purple" style="padding:16px;">
+        <span class="badge badge-purple" style="font-size:0.92rem; padding:4px 10px;">1. API Key (Usage / Metering)</span>
+        <h3 style="font-size:1.35rem; font-weight:700; color:var(--brand-primary); margin:8px 0 4px;">Consumer / Usage Identifier</h3>
+        <p style="font-size:1.05rem; color:var(--text-muted); margin-bottom:8px;"><i>API Key = Application/consumer identifier for usage control</i></p>
+        <ul style="list-style:none; font-size:1.05rem; color:var(--text-secondary); display:flex; flex-direction:column; gap:4px;">
+          <li>• Đại diện cho Client Application / Partner / Tenant.</li>
+          <li>• Ví dụ: Tenant A (10,000 Users) ➔ Có thể dùng 1 API Key cho một integration.</li>
+          <li>• Đo đếm Quotas &amp; Usage Plans.</li>
+        </ul>
+      </div>
+
+      <div class="card card-blue" style="padding:16px;">
+        <span class="badge badge-blue" style="font-size:0.92rem; padding:4px 10px;">2. JWT / Cognito (AuthN / AuthZ)</span>
+        <h3 style="font-size:1.35rem; font-weight:700; color:var(--brand-primary); margin:8px 0 4px;">User Identity</h3>
+        <p style="font-size:1.05rem; color:var(--text-muted); margin-bottom:8px;"><i>Who is this user &amp; what can they do?</i></p>
+        <ul style="list-style:none; font-size:1.05rem; color:var(--text-secondary); display:flex; flex-direction:column; gap:4px;">
+          <li>• 1 User ➔ 1 JWT Token riêng biệt.</li>
+          <li>• AuthN: JWT / OIDC / Cognito.</li>
+          <li>• AuthZ: Coarse-grained Scopes (Gateway) ➔ Fine-grained (Application).</li>
+        </ul>
+      </div>
+
+      <div class="card card-accent" style="padding:16px;">
+        <span class="badge badge-accent" style="font-size:0.92rem; padding:4px 10px;">3. AWS WAF (Layer 7 Protection)</span>
+        <h3 style="font-size:1.35rem; font-weight:700; color:var(--brand-primary); margin:8px 0 4px;">Abuse Protection</h3>
+        <p style="font-size:1.05rem; color:var(--text-muted); margin-bottom:8px;"><i>Web ACL Firewall &amp; Rate Rules</i></p>
+        <ul style="list-style:none; font-size:1.05rem; color:var(--text-secondary); display:flex; flex-direction:column; gap:4px;">
+          <li>• Layer 7 Web ACL Managed/Custom Rules.</li>
+          <li>• Chống Bot, SQLi, XSS, IP Rate-based Rules.</li>
+          <li>• <i>(Khác với APIGW Token Bucket Throttling)</i>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px; padding:12px 20px; background:rgba(239,68,68,0.04); border-left:4px solid var(--brand-danger);">
+      <p style="font-size:1.1rem; margin:0; color:var(--text-primary);">
+        ⚠️ <strong>Misconception phổ biến:</strong> API Key không phải là Authentication hay Identity Assurance!
+      </p>
+    </div>
+  </div>
+  <div class="slide-footer"><span>07 — API Security Architecture</span></div>
+</section>
+
+<!-- Slide 09: Proxy vs Non-Proxy Integration -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header" style="margin-bottom:16px;">
+      <div class="eyebrow">Integration Mechanics</div>
+      <h2>Proxy vs Non-Proxy Integration</h2>
+      <p class="lead">Khi Nào Integration Error Có Thể Biến Thành HTTP 200 OK?</p>
+    </div>
+    
+    <div class="grid grid-2" style="gap:16px;">
+      <div class="card card-success" style="padding:16px; background:rgba(34,197,94,0.02);">
+        <h3 style="color:var(--brand-success); font-size:1.35rem; font-weight:700; margin-bottom:8px;">⚡ Lambda Proxy Integration</h3>
+        <p style="font-size:1.1rem; color:var(--text-secondary); margin-bottom:10px;">
+          Proxy Integration loại bỏ nhu cầu cấu hình Integration mapping thủ công; Gateway chuyển request theo proxy event model và nhận response theo Lambda proxy contract.
+        </p>
+        <div class="code-block" style="font-size:0.92rem; padding:14px; line-height:1.5; white-space:pre;"><span class="cmt">// Lambda Proxy Response Contract</span>
+{
+  <span class="str">"statusCode"</span>: 200,
+  <span class="str">"headers"</span>: {
+    <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>
+  },
+  <span class="str">"body"</span>: <span class="str">"{\"message\": \"Success\"}"</span>
+}</div>
+      </div>
+
+      <div class="card card-accent" style="padding:16px; background:rgba(245,158,11,0.02);">
+        <h3 style="color:var(--brand-accent); font-size:1.35rem; font-weight:700; margin-bottom:8px;">⚙️ Non-Proxy Integration (Custom VTL)</h3>
+        <p style="font-size:1.1rem; color:var(--text-secondary); margin-bottom:10px;">
+          Non-proxy integration có thể tạo "silent failure" nếu error mapping được cấu hình sai.
+        </p>
+        <div style="background:#ffffff; border:1px solid #fed7aa; border-radius:8px; padding:10px; font-size:1.05rem; color:#9a3412; line-height:1.4;">
+          ⚠️ <strong>Configuration Failure:</strong> Backend error ➔ Không match <code>selectionPattern</code> ➔ Rơi vào Default Integration Response ➔ Nếu response đó map tới Method Response <code>200</code>, Client sẽ nhận HTTP 200!
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px; padding:10px 18px; background:rgba(37,99,235,0.03); border-left:4px solid var(--brand-secondary);">
+      <p style="font-size:0.95rem; margin:0; color:var(--text-secondary);">
+        🔗 <strong>AWS Developer Guide:</strong> 
+        <a href="https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html" target="_blank" style="color:var(--brand-secondary); font-weight:bold; text-decoration:underline; margin-right:12px;">Lambda Proxy Output Format</a> | 
+        <a href="https://docs.aws.amazon.com/apigateway/latest/developerguide/handle-errors-in-lambda-integration.html" target="_blank" style="color:var(--brand-accent); font-weight:bold; text-decoration:underline; margin-left:8px;">Custom Non-Proxy Error Handling</a>
+      </p>
+    </div>
+  </div>
+  <div class="slide-footer"><span>08 — Proxy vs Non-Proxy Integration</span></div>
+</section>
+
+<!-- Slide 10: Diagnostic Heuristic Flow Playbook -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header" style="margin-bottom:14px;">
+      <div class="eyebrow">Debug Playbook</div>
+      <h2>Quy Tắc Khoanh Vùng Lỗi 502 Bad Gateway</h2>
+      <p class="lead">Quy trình 4 bước chẩn đoán chính xác nguyên nhân gây ra HTTP 502 Bad Gateway.</p>
+    </div>
+    
+    <div class="grid grid-4" style="gap:12px;">
+      <div class="card card-blue" style="padding:20px 22px; font-size:1.05rem;">
+        <span class="badge badge-blue" style="margin-bottom:6px;">Step 1</span>
+        <h3 style="font-size:1.2rem; font-weight:700; color:var(--brand-primary); margin-bottom:6px;">1. Gateway Rejected?</h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:4px; color:var(--text-secondary);">
+          <li>• Auth / API Key</li>
+          <li>• Request Validation</li>
+          <li>• Route / Method matching</li>
+        </ul>
+      </div>
+
+      <div class="card card-accent" style="padding:20px 22px; font-size:1.05rem;">
+        <span class="badge badge-accent" style="margin-bottom:6px;">Step 2</span>
+        <h3 style="font-size:1.2rem; font-weight:700; color:var(--brand-primary); margin-bottom:6px;">2. Integration Failed?</h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:4px; color:var(--text-secondary);">
+          <li>• Permission <code>lambda:InvokeFunction</code></li>
+          <li>• Integration URI / Target ARN</li>
+          <li>• Integration Timeout</li>
+        </ul>
+      </div>
+
+      <div class="card card-purple" style="padding:20px 22px; font-size:1.05rem;">
+        <span class="badge badge-purple" style="margin-bottom:6px;">Step 3</span>
+        <h3 style="font-size:1.2rem; font-weight:700; color:var(--brand-primary); margin-bottom:6px;">3. Lambda Invoked?</h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:4px; color:var(--text-secondary);">
+          <li>• Check CloudWatch Log Stream</li>
+          <li>• Log sạch ➔ Strong signal là Invocation chưa tới Lambda</li>
+        </ul>
+      </div>
+
+      <div class="card card-danger" style="padding:20px 22px; font-size:1.05rem;">
+        <span class="badge badge-danger" style="margin-bottom:6px;">Step 4</span>
+        <h3 style="font-size:1.2rem; font-weight:700; color:var(--brand-primary); margin-bottom:6px;">4. Response Valid?</h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:4px; color:var(--text-secondary);">
+          <li>• Proxy response contract</li>
+          <li>• Valid <code>statusCode</code> &amp; <code>headers</code></li>
+          <li>• <code>body</code> là string JSON</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer"><span>09 — 502 Diagnostic Playbook</span></div>
+</section>
+
+<!-- Slide 11: Quiet Failure vs Loud Failure + Observability Takeaway Box -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header" style="margin-bottom:14px;">
+      <div class="eyebrow">Production Error Philosophy</div>
+      <h2>Sự Tương Phản: Lỗi Ồn Ào (502) vs Lỗi Im Lặng (200)</h2>
+      <p class="lead">Triết lý vận hành hệ thống lớn trên Production.</p>
+    </div>
+    
+    <div class="grid grid-2" style="gap:16px; align-items:stretch;">
+      <div class="card card-danger" style="padding:16px; background:rgba(239,68,68,0.02);">
+        <h3 style="color:var(--brand-danger); font-size:1.35rem; font-weight:700; margin-bottom:8px;">📢 LỖI ỒN ÀO (502 Bad Gateway)</h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:6px; font-size:1.1rem; color:var(--text-secondary);">
+          <li>⚡ <strong>Hành vi:</strong> Trả mã 5xx lập tức ngắt kết nối.</li>
+          <li>🚨 <strong>Giám sát:</strong> Monitoring &amp; Alert nhảy ngay.</li>
+          <li>🛠️ <strong>Xử lý:</strong> Dev khoanh vùng và fix dựa trên error traceback.</li>
+        </ul>
+      </div>
+
+      <div class="card card-accent" style="padding:16px; background:rgba(245,158,11,0.02);">
+        <h3 style="color:var(--brand-accent); font-size:1.35rem; font-weight:700; margin-bottom:8px;">🔕 LỖI IM LẶNG (200 OK Malformed)</h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:6px; font-size:1.1rem; color:var(--text-secondary);">
+          <li>👻 <strong>Hành vi:</strong> Client nhận HTTP 200 dù business operation thực tế thất bại.</li>
+          <li>🙈 <strong>Giám sát:</strong> Monitoring dựa trên HTTP status có thể bỏ sót lỗi.</li>
+          <li>🩸 <strong>Hậu quả:</strong> Tích tụ dữ liệu hỏng mà hệ thống ngỡ là thành công.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card card-purple" style="margin-top:14px; padding:12px 18px; background:rgba(147,51,234,0.03); border-left:4px solid var(--brand-purple);">
+      <p style="font-size:1.1rem; margin:0; color:var(--text-primary);">
+        🔍 <strong>Production Observability Takeaway:</strong> <i>Đừng chỉ monitor duy nhất HTTP Status Code! Luôn liên vết (Correlate): <strong>APIGW Access Log ➔ Lambda Log ➔ Request Correlation ID ➔ Business Outcome.</strong></i>
+      </p>
+    </div>
+  </div>
+  <div class="slide-footer"><span>10 — Production Error Philosophy &amp; Observability</span></div>
+</section>
+
+<!-- Slide 12: Deployment Architecture -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header" style="margin-bottom:16px;">
+      <div class="eyebrow">Deployment Architecture</div>
+      <h2>API Gateway Deployment ≠ Application Deployment</h2>
+      <p class="lead">Kiến trúc API Configuration Snapshot, Stage Variables &amp; Lambda Alias Routing.</p>
+    </div>
+    
+    <div class="grid grid-2" style="gap:20px; align-items:stretch;">
+      <div class="card card-accent" style="padding:18px;">
+        <h3 style="color:var(--brand-accent); font-size:1.35rem; font-weight:700; margin-bottom:8px;">1. API Gateway: Configuration Snapshot</h3>
+        <p style="font-size:1.1rem; color:var(--text-secondary); line-height:1.45; margin-bottom:8px;">
+          Sửa Route/Method trên Console ➔ Bắt buộc bấm <strong>Deploy API Stage</strong> mới tạo ra API configuration snapshot được stage phục vụ.
+        </p>
+        <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:8px 10px; font-size:1.05rem; color:#92400e;">
+          ⚠️ Console configuration ≠ Deployed stage configuration. Quên deploy stage sẽ khiến stage phục vụ deployment cũ.
+        </div>
+      </div>
+
+      <div class="card card-blue" style="padding:18px;">
+        <h3 style="color:var(--brand-secondary); font-size:1.35rem; font-weight:700; margin-bottom:8px;">2. Lambda Alias Routing Pattern</h3>
+        <p style="font-size:1.1rem; color:var(--text-secondary); line-height:1.45; margin-bottom:8px;">
+          <strong>Production Risk:</strong> Trỏ API Gateway trực tiếp vào <code>$LATEST</code>. Sửa code Lambda ➔ Production bị ảnh hưởng tức thì!
+        </p>
+        <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:8px 10px; font-size:1.05rem; color:#1e40af;">
+          💡 <strong>Một Pattern Hữu Ích:</strong> Dùng APIGW Stage Variable <code>${stageVariables.lambdaAlias}</code> trỏ tới Lambda Alias (trỏ vào Lambda Version). Khi chỉ promote Lambda version/alias, không cần tạo deployment mới cho API Gateway.
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer"><span>11 — Deployment Architecture</span></div>
+</section>
+
+<!-- Slide 13: Reframed Integration Patterns (Beyond Lambda) -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header" style="margin-bottom: 16px;">
+      <div class="eyebrow">Optional Architecture Patterns</div>
+      <h2>Beyond Lambda: Where API Gateway Can Integrate</h2>
+      <p class="lead">API Gateway không nhất thiết phải trỏ tới Lambda. Các kịch bản tích hợp mở rộng kiến trúc.</p>
+    </div>
+    
+    <div class="grid grid-2" style="gap: 18px;">
+      <div class="card card-blue" style="padding: 16px; background: rgba(37,99,235,0.02);">
+        <h3 style="color: var(--brand-secondary); font-size: 1.35rem; font-weight: 700; margin-bottom:6px;">1. Direct AWS Service (Lambda-less)</h3>
+        <p style="font-size: 1.1rem; color: var(--text-secondary); margin: 0;">
+          ⚡ Loại bỏ Lambda khỏi đường request khi ghi thẳng DynamoDB/SQS từ API Gateway bằng VTL ➔ Giảm một hop network và chi phí compute Lambda.
+        </p>
+      </div>
+
+      <div class="card card-success" style="padding: 16px; background: rgba(34,197,94,0.02);">
+        <h3 style="color: var(--brand-success); font-size: 1.35rem; font-weight: 700; margin-bottom:6px;">2. Async Offloading (Queue &amp; Worker)</h3>
+        <p style="font-size: 1.1rem; color: var(--text-secondary); margin: 0;">
+          🛡️ Trả ngay 202 Accepted cho Client, đẩy task nặng vào SQS Queue cho Worker ➔ Tránh phụ thuộc vào synchronous API timeout cho long-running jobs.
+        </p>
+      </div>
+
+      <div class="card card-accent" style="padding: 16px; background: rgba(245,158,11,0.02);">
+        <h3 style="color: var(--brand-accent); font-size: 1.35rem; font-weight: 700; margin-bottom:6px;">3. Security Topology (WAF ➔ APIGW ➔ JWT)</h3>
+        <p style="font-size: 1.1rem; color: var(--text-secondary); margin: 0;">
+          🔒 Topology nhất quán: Internet ➔ AWS WAF (Abuse Protection) ➔ API Gateway ➔ JWT Authentication ➔ Backend Services.
+        </p>
+      </div>
+
+      <div class="card card-purple" style="padding: 16px; background: rgba(147,51,234,0.02);">
+        <h3 style="color: var(--brand-purple); font-size: 1.35rem; font-weight: 700; margin-bottom:6px;">4. VPC Link (Private Integration)</h3>
+        <p style="font-size: 1.1rem; color: var(--text-secondary); margin: 0;">
+          🏢 Connect an toàn từ API Gateway qua VPC Link tới Private Integration (ALB/ECS Fargate) nằm giấu kín trong mạng nội bộ.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer"><span>12 — Beyond Lambda Integration Patterns</span></div>
+</section>
+
+<!-- Slide 14: Final Decision Matrix & Takeaways -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header" style="margin-bottom:16px;">
+      <div class="eyebrow">Decision Matrix &amp; Takeaways</div>
+      <h2>What Would Make Me Choose REST API?</h2>
+      <p class="lead">Khung tư duy ra quyết định đơn giản và nhất quán cho mọi dự án.</p>
+    </div>
+    
+    <div class="grid grid-2" style="gap:20px; align-items:center;">
+      <div class="card card-blue" style="padding:18px; text-align:center;">
+        <h3 style="color:var(--brand-secondary); font-size:1.35rem; font-weight:700; margin-bottom:10px;">REST-Specific Capability Needed?</h3>
+        <p style="font-size:1.1rem; color:var(--text-secondary); margin-bottom:12px;">
+          WAF Association | API Keys | Usage Plans | Request Validation | Private Endpoint | VTL | Caching | Canary | Custom Responses
+        </p>
+        <div style="display:flex; justify-content:space-around; margin-top:10px;">
+          <div style="background:#eff6ff; border:1px solid #3b82f6; border-radius:8px; padding:8px 16px; font-weight:bold; color:#1d4ed8;">YES ➔ REST API</div>
+          <div style="background:#f0fdf4; border:1px solid #22c55e; border-radius:8px; padding:8px 16px; font-weight:bold; color:#15803d;">NO ➔ HTTP API (default candidate)</div>
+        </div>
+      </div>
+
+      <div class="card card-success" style="padding:18px;">
+        <h3 style="color:var(--brand-success); font-size:1.35rem; font-weight:700; margin-bottom:10px;">📋 Handout Checklist Vận Hành</h3>
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:6px; font-size:1.1rem; color:var(--text-secondary);">
+          <li>1. Luôn cấu hình <strong>Throttling limit</strong> bảo vệ Backend.</li>
+          <li>2. Tuân thủ đúng <strong>Lambda Proxy Response Schema</strong>.</li>
+          <li>3. Bật <strong>CloudWatch Execution Logging</strong> (ERROR level).</li>
+          <li>4. Dùng <strong>Lambda Alias</strong> kết hợp Stage Variables.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-footer"><span>13 — Final Decision Matrix</span></div>
+</section>
+
+<!-- Slide 15: Section Divider Lab -->
+<section class="slide slide-divider">
+  <div class="section-number">LAB</div>
+  <div class="section-label">Hands-on Section</div>
+  <h2>API Gateway Hands-on Lab — 5 Phases</h2>
+  <p class="lead">Walkthrough Kịch Bản Thực Hành Kỹ Thuật trên Console &amp; IaC.</p>
+</section>
+
+<!-- Slide 16: Lab Phase 1 -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header">
+      <div class="eyebrow">Lab Phase 1</div>
+      <h2>Phase 1 — First API &amp; The Deploy Trap</h2>
+      <p class="lead">Tái tạo tình huống Console configuration ≠ Deployed stage configuration.</p>
+    </div>
+    <div class="card card-blue" style="padding:24px 28px;">
+      <p style="font-size:1.1rem; color:var(--text-secondary);">• Tạo REST API ➔ Route <code>GET /items</code> ➔ Map tới Lambda Handler.<br>• Test trên Console ➔ Thành công 200 OK.<br>• Gọi qua Stage URL ➔ Route/resource mới chưa có trong deployment đang phục vụ ➔ Request không đi tới configuration mới (Trong setup lab này quan sát thấy response <code>403 Forbidden</code>).<br>• <strong>Khắc phục:</strong> Bấm Deploy API ➔ Chọn Stage <code>dev</code> ➔ Gọi lại thành công.</p>
+    </div>
+  </div>
+  <div class="slide-footer"><span>15 — Lab Phase 1</span></div>
+</section>
+
+<!-- Slide 17: Lab Phase 2 -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header">
+      <div class="eyebrow">Lab Phase 2</div>
+      <h2>Phase 2 — Breaking the Proxy Contract (502)</h2>
+      <p class="lead">Cố tình làm gãy hợp đồng Proxy để kích hoạt lỗi 502 Bad Gateway.</p>
+    </div>
+    <div class="card card-danger" style="padding:24px 28px;">
+      <p style="font-size:1.1rem; color:var(--text-secondary);">• Sửa Lambda return chuỗi thô <code>return "Hello"</code>.<br>• Gọi API ➔ Nhận ngay lỗi <code>502 Bad Gateway</code>.<br>• Mở CloudWatch Log của Lambda ➔ Dòng log Success 200.<br>• <strong>Khắc phục:</strong> Trả response đúng format của Lambda Proxy Integration contract <code>{ statusCode: 200, body: "..." }</code>.</p>
+    </div>
+  </div>
+  <div class="slide-footer"><span>16 — Lab Phase 2</span></div>
+</section>
+
+<!-- Slide 18: Lab Phase 3 -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header">
+      <div class="eyebrow">Lab Phase 3</div>
+      <h2>Phase 3 — Non-Proxy Integration &amp; VTL</h2>
+      <p class="lead">Xây dựng luồng biến đổi Payload bằng VTL Template.</p>
+    </div>
+    <div class="card card-purple" style="padding:24px 28px;">
+      <p style="font-size:1.1rem; color:var(--text-secondary);">• Chuyển API sang Non-Proxy Integration.<br>• Viết VTL Mapping Template đổi `user_id` thành `userId`.<br>• Cấu hình Integration Response bắt Regex lỗi.<br>• Kiểm tra Payload được transform sạch sẽ trước khi tới Backend.</p>
+    </div>
+  </div>
+  <div class="slide-footer"><span>17 — Lab Phase 3</span></div>
+</section>
+
+<!-- Slide 19: Lab Phase 4 -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header">
+      <div class="eyebrow">Lab Phase 4</div>
+      <h2>Phase 4 — Stage Variables + Lambda Alias</h2>
+      <p class="lead">Cấu hình định tuyến động giữa các Lambda Versions qua Lambda Alias.</p>
+    </div>
+    <div class="card card-accent" style="padding:24px 28px;">
+      <p style="font-size:1.1rem; color:var(--text-secondary);">• Tạo 2 Lambda Version (Version 1 &amp; Version 2) ➔ Gán Alias <code>:dev</code> và <code>:prod</code> trỏ vào Version tương ứng (Alias không chứa code, trỏ vào Version).<br>• Khai báo Stage Variable <code>lambdaAlias</code> = <code>dev</code>.<br>• Map ARN Target: <code>arn:aws:lambda:...:my-func:${stageVariables.lambdaAlias}</code>.<br>• Thử nghiệm chuyển Alias trỏ sang Version mới không làm gián đoạn Stage <code>:dev</code>.</p>
+    </div>
+  </div>
+  <div class="slide-footer"><span>18 — Lab Phase 4</span></div>
+</section>
+
+<!-- Slide 20: Lab Phase 5 -->
+<section class="slide">
+  <div class="slide-content">
+    <div class="slide-header">
+      <div class="eyebrow">Lab Phase 5</div>
+      <h2>Phase 5 — API Keys, Usage Plans &amp; Throttling</h2>
+      <p class="lead">Thiết lập Hạn ngạch &amp; Giới hạn Rate Limit cho Client.</p>
+    </div>
+    <div class="card card-success" style="padding:24px 28px;">
+      <p style="font-size:1.1rem; color:var(--text-secondary);">• Tạo API Key ➔ Gán vào Usage Plan (Rate: 5 req/s, Burst: 10).<br>• Bật `API Key Required = true` trên Method Request.<br>• Gọi thử không truyền Header `x-api-key` ➔ Dính <code>403 Forbidden</code>.<br>• Bắn burst requests dồn dập ➔ Observe throttling behavior (có thể nhận <code>429 Too Many Requests</code> khi vượt limit).</p>
+    </div>
+  </div>
+  <div class="slide-footer"><span>19 — Lab Phase 5</span></div>
+</section>
+
+<!-- Slide 21: Q&A Slide -->
+<section class="slide slide-title">
+  <div class="eyebrow" style="color: var(--brand-accent);">Tech Sharing &amp; Workshop</div>
+  <h1 style="font-size: clamp(2.5rem, 5vw, 4rem);">Hỏi Đáp &amp; Thảo Luận</h1>
+  <p class="lead" style="max-width: 600px;">Q&amp;A Session — Giải đáp các bài toán thực tế trên Production của bạn.</p>
+  <div class="meta-chips" style="margin-top: 32px;">
+    <div class="chip">💡 <strong>Sự cố thực tế?</strong></div>
+    <div class="chip">⚖️ <strong>Lựa chọn API?</strong></div>
+    <div class="chip">💰 <strong>Tối ưu chi phí?</strong></div>
+  </div>
+</section>
+
+<script>
+class SlidePresentation {
+  constructor() {
+    this.slides = document.querySelectorAll('.slide');
+    this.dotsNav = document.getElementById('navDots');
+    this.progressBar = document.getElementById('progress');
+    this.counterEl = document.getElementById('counter');
+    this.currentIndex = 0;
+    this.init();
+  }
+
+  init() {
+    this.createNavDots();
+    this.bindEvents();
+    this.updateState(0);
+    if (window.lucide) { lucide.createIcons(); }
+  }
+
+  createNavDots() {
+    this.slides.forEach((_, idx) => {
+      const dot = document.createElement('button');
+      dot.className = 'nav-dot';
+      dot.setAttribute('aria-label', `Go to slide ${idx + 1}`);
+      dot.addEventListener('click', () => this.scrollToSlide(idx));
+      this.dotsNav.appendChild(dot);
+    });
+  }
+
+  bindEvents() {
+    document.addEventListener('keydown', (e) => {
+      if (['ArrowDown', 'ArrowRight', 'PageDown', ' '].includes(e.key)) {
+        e.preventDefault();
+        this.next();
+      } else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key)) {
+        e.preventDefault();
+        this.prev();
+      }
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const idx = Array.from(this.slides).indexOf(entry.target);
+          if (idx !== -1) this.updateState(idx);
+        }
+      });
+    }, { threshold: 0.5 });
+
+    this.slides.forEach(slide => observer.observe(slide));
+  }
+
+  scrollToSlide(index) {
+    if (index >= 0 && index < this.slides.length) {
+      this.slides[index].scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  next() { this.scrollToSlide(this.currentIndex + 1); }
+  prev() { this.scrollToSlide(this.currentIndex - 1); }
+
+  updateState(index) {
+    this.currentIndex = index;
+    const progressPercent = ((index + 1) / this.slides.length) * 100;
+    this.progressBar.style.width = `${progressPercent}%`;
+    
+    const dots = this.dotsNav.querySelectorAll('.nav-dot');
+    dots.forEach((dot, idx) => dot.classList.toggle('active', idx === index));
+    
+    const formattedCurrent = String(index + 1).padStart(2, '0');
+    const formattedTotal = String(this.slides.length).padStart(2, '0');
+    this.counterEl.innerHTML = `<strong>${formattedCurrent}</strong> / ${formattedTotal}`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => new SlidePresentation());
+</script>
+</body>
+</html>

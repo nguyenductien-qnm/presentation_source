@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3 LẦN CHATGPT SẬP — Chúng Ta Rút Ra Được Gì?</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* ===========================================
+           CSS CUSTOM PROPERTIES (STYLE A: DARK TERMINAL)
+           =========================================== */
+        :root {
+            --stage-bg: #05070c;
+            --slide-bg: #080c15;
+            --card-bg: #101625;
+            --card-bg-hover: #151d30;
+            --card-border: rgba(56, 189, 248, 0.14);
+            
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            
+            --accent-cyan: #38bdf8;
+            --accent-red: #f43f5e;
+            --accent-green: #34d399;
+            --accent-purple: #c084fc;
+            --accent-amber: #fbbf24;
+
+            --font-main: 'Plus Jakarta Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --duration-normal: 0.5s;
+        }
+
+        /* ===========================================
+           FIXED 16:9 STAGE: MANDATORY BASE STYLES
+           =========================================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: var(--stage-bg);
+            font-family: var(--font-main);
+            color: var(--text-main);
+        }
+
+        .deck-viewport {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            background: var(--stage-bg);
+        }
+
+        .deck-stage {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            transform-origin: 0 0;
+            background: var(--slide-bg);
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.06) 0%, transparent 65%),
+                linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 100% 100%, 64px 64px, 64px 64px;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden;
+            display: block;
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            background: transparent;
+            padding: 60px 100px;
+            box-sizing: border-box;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        .slide.active, .slide.visible {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 1;
+        }
+
+        img, video, canvas, svg {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* ===========================================
+           SLIDE CONTENT LAYOUT & COMPONENTS
+           =========================================== */
+        .slide-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Header bar */
+        .slide-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-family: var(--font-mono);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 8px;
+        }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot-red { background: var(--accent-red); }
+        .dot-yellow { background: var(--accent-amber); }
+        .dot-green { background: var(--accent-green); }
+
+        .header-path {
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        .header-badge {
+            font-size: 13px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        /* Main content areas */
+        .slide-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 30px 0;
+            overflow: hidden;
+        }
+
+        /* Footer bar */
+        .slide-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--text-muted);
+            position: relative;
+            z-index: 100;
+        }
+        .footer-sources {
+            display: flex;
+            gap: 12px;
+        }
+        .source-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 5px 14px;
+            border-radius: 6px;
+            color: var(--text-muted);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-block;
+            pointer-events: auto;
+        }
+        .source-pill:hover {
+            background: rgba(56, 189, 248, 0.18);
+            color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            transform: translateY(-1px);
+        }
+
+        /* Titles & Headings */
+        .eyebrow {
+            font-family: var(--font-mono);
+            font-size: 18px;
+            color: var(--accent-cyan);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .eyebrow::before {
+            content: '>';
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+
+        .slide-title {
+            font-size: 52px;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -1px;
+            color: var(--text-main);
+            margin-bottom: 16px;
+        }
+        .slide-title span.red { color: var(--accent-red); }
+        .slide-title span.cyan { color: var(--accent-cyan); }
+        .slide-title span.purple { color: var(--accent-purple); }
+        .slide-title span.amber { color: var(--accent-amber); }
+
+        .slide-subtitle {
+            font-size: 24px;
+            color: var(--text-muted);
+            line-height: 1.45;
+            margin-bottom: 32px;
+            max-width: 1400px;
+        }
+
+        /* Cards & Grids */
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+        .grid-3x2 { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 24px; }
+        .grid-2x2 { display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 28px; }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+            opacity: 0.4;
+        }
+        .card.card-red::before { background: linear-gradient(90deg, transparent, var(--accent-red), transparent); }
+        .card.card-amber::before { background: linear-gradient(90deg, transparent, var(--accent-amber), transparent); }
+        .card.card-green::before { background: linear-gradient(90deg, transparent, var(--accent-green), transparent); }
+        .card.card-purple::before { background: linear-gradient(90deg, transparent, var(--accent-purple), transparent); }
+
+        .card-header {
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+        .card-body {
+            font-size: 17px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        .card-body ul {
+            padding-left: 20px;
+            margin-top: 8px;
+        }
+        .card-body li {
+            margin-bottom: 8px;
+        }
+
+        /* Stat Box */
+        .stat-box {
+            background: rgba(16, 22, 37, 0.8);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 20px 24px;
+            text-align: center;
+        }
+        .stat-number {
+            font-family: var(--font-mono);
+            font-size: 40px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            line-height: 1.1;
+        }
+        .stat-label {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        /* Code Block */
+        .code-block {
+            background: #060911;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 22px 26px;
+            font-family: var(--font-mono);
+            font-size: 16px;
+            line-height: 1.65;
+            color: #e2e8f0;
+            overflow-x: auto;
+            position: relative;
+        }
+        .code-block .comment { color: #64748b; font-style: italic; }
+        .code-block .keyword { color: #f43f5e; font-weight: bold; }
+        .code-block .string { color: #34d399; }
+        .code-block .number { color: #fbbf24; }
+
+        /* Callout Box */
+        .callout {
+            background: rgba(56, 189, 248, 0.08);
+            border-left: 4px solid var(--accent-cyan);
+            border-radius: 0 12px 12px 0;
+            padding: 20px 28px;
+            font-size: 19px;
+            color: var(--text-main);
+            line-height: 1.5;
+            margin-top: 24px;
+        }
+        .callout.callout-red {
+            background: rgba(244, 63, 94, 0.08);
+            border-left-color: var(--accent-red);
+        }
+        .callout.callout-amber {
+            background: rgba(251, 191, 36, 0.08);
+            border-left-color: var(--accent-amber);
+        }
+        .callout.callout-green {
+            background: rgba(52, 211, 153, 0.08);
+            border-left-color: var(--accent-green);
+        }
+
+        /* Divider Slide Special Styling */
+        .slide.divider-slide {
+            background: radial-gradient(circle at 50% 50%, #0f172a 0%, #030712 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .divider-content {
+            max-width: 1200px;
+        }
+        .divider-tag {
+            font-family: var(--font-mono);
+            font-size: 22px;
+            color: var(--accent-cyan);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+        .divider-title {
+            font-size: 72px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 24px;
+            letter-spacing: -2px;
+        }
+        .divider-desc {
+            font-size: 28px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Table styling */
+        .styled-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+            font-size: 16px;
+        }
+        .styled-table th {
+            background: #111827;
+            color: var(--accent-cyan);
+            font-family: var(--font-mono);
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .styled-table td {
+            background: var(--card-bg);
+            color: var(--text-muted);
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            line-height: 1.4;
+        }
+        .styled-table tr:last-child td { border-bottom: none; }
+        .styled-table tr:nth-child(even) td { background: #0c1220; }
+        .styled-table td strong { color: var(--text-main); }
+
+        /* Tag pills */
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+        }
+        .tag-red {
+            background: rgba(244, 63, 94, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+        }
+        .tag-amber {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--accent-amber);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+        .tag-purple {
+            background: rgba(192, 132, 252, 0.15);
+            color: var(--accent-purple);
+            border: 1px solid rgba(192, 132, 252, 0.3);
+        }
+        .tag-green {
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        /* Step flow diagram */
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 24px;
+            font-family: var(--font-mono);
+            font-size: 15px;
+        }
+        .flow-step {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 14px 20px;
+            border-radius: 10px;
+            color: var(--text-main);
+            flex: 1;
+            text-align: center;
+        }
+        .flow-arrow {
+            color: var(--accent-cyan);
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        /* Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity var(--duration-normal) var(--ease-out-expo),
+                        transform var(--duration-normal) var(--ease-out-expo);
+        }
+        .slide.visible .reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal:nth-child(1) { transition-delay: 0.05s; }
+        .reveal:nth-child(2) { transition-delay: 0.12s; }
+        .reveal:nth-child(3) { transition-delay: 0.20s; }
+        .reveal:nth-child(4) { transition-delay: 0.28s; }
+        .reveal:nth-child(5) { transition-delay: 0.35s; }
+
+        /* ===========================================
+           PRESENTATION CONTROLS & CHROME
+           =========================================== */
+        /* Top Progress Bar */
+        .progress-bar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            z-index: 10000;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+            transition: width 0.3s ease;
+        }
+
+        /* Navigation Dots */
+        .nav-dots {
+            position: fixed;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10000;
+        }
+        .nav-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .nav-dot:hover {
+            background: var(--accent-cyan);
+            transform: scale(1.3);
+        }
+        .nav-dot.active {
+            background: var(--accent-cyan);
+            height: 24px;
+            border-radius: 12px;
+            box-shadow: 0 0 10px var(--accent-cyan);
+        }
+
+        /* Bottom Control Bar */
+        .deck-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 8px 20px;
+            border-radius: 30px;
+            backdrop-filter: blur(12px);
+            z-index: 10000;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--text-muted);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        .ctrl-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+        .ctrl-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--accent-cyan); }
+        .slide-counter { font-weight: bold; color: var(--text-main); min-width: 60px; text-align: center; }
+
+        /* Inline Editing */
+        .edit-hotzone {
+            position: fixed;
+            top: 0; left: 0;
+            width: 80px; height: 80px;
+            z-index: 10000;
+            cursor: pointer;
+        }
+        .edit-toggle {
+            position: fixed;
+            top: 20px; left: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 10001;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        .edit-toggle.show, .edit-toggle.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .edit-toggle.active {
+            background: var(--accent-cyan);
+            color: #000;
+            font-weight: bold;
+        }
+
+        [contenteditable="true"] {
+            outline: 2px dashed var(--accent-cyan) !important;
+            outline-offset: 4px;
+            border-radius: 4px;
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.1s !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Progress Bar -->
+    <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+
+    <!-- Navigation Dots -->
+    <div class="nav-dots" id="navDots"></div>
+
+    <!-- Edit mode hotzone & toggle -->
+    <div class="edit-hotzone"></div>
+    <button class="edit-toggle" id="editToggle" title="Toggle edit mode (Press E)">✏️ Edit Mode</button>
+
+    <!-- Controls -->
+    <div class="deck-controls">
+        <button class="ctrl-btn" id="prevBtn" title="Previous (Left Arrow)">◄</button>
+        <span class="slide-counter" id="slideCounter">01 / 14</span>
+        <button class="ctrl-btn" id="nextBtn" title="Next (Right Arrow)">►</button>
+    </div>
+
+    <div class="deck-viewport">
+        <main class="deck-stage" id="deckStage">
+
+            <!-- ==================== SLIDE 01 ==================== -->
+            <section class="slide active">
+                <div class="slide-container">
+                    <div class="slide-header">
+                        <div class="header-left">
+                            <div class="terminal-dots">
+                                <div class="dot dot-red"></div>
+                                <div class="dot dot-yellow"></div>
+                                <div class="dot dot-green"></div>
+                            </div>
+                            <span class="header-path">incident-response // postmortem-briefing.sh</span>
+                        </div>
+                        <div class="header-badge">
+                            <div class="pulse-dot"></div>
+                            <span>PRODUCTION SYSTEM ANALYSIS</span>
+                        </div>
+                    </div>
+
+                    <div class="slide-body" style="align-items: flex-start;">
+                        <div class="eyebrow reveal">ChatGPT Incident Analysis · Case Study Series (Aug–Sep 2026)</div>
+                        <h1 class="slide-title reveal" style="font-size: 72px; margin-bottom: 24px;">
+                            <span class="red">3 SỰ CỐ CHATGPT TIÊU BIỂU</span><br>
+                            Chúng Ta Rút Ra Được Gì?
+                        </h1>
+                        <p class="slide-subtitle reveal" style="font-size: 28px; max-width: 1300px;">
+                            3 case study tiêu biểu trong giai đoạn 20/8 – 4/9/2026 (16 ngày) — mổ xẻ 3 failure modes khác nhau để hiểu sâu hơn về production system.
+                        </p>
+
+                        <div class="grid-3 reveal" style="width: 100%; margin-top: 36px;">
+                            <div class="card card-red">
+                                <div class="card-header">SELECTED CASE STUDIES</div>
+                                <div class="card-title" style="color: var(--accent-red);">20/8 · 3/9 · 4/9</div>
+                                <div class="card-body">3 sự cố đại diện cho 3 tầng kiến trúc khác nhau</div>
+                            </div>
+                            <div class="card card-purple">
+                                <div class="card-header">ANALYSIS FOCUS</div>
+                                <div class="card-title" style="color: var(--accent-purple);">Root Cause & Patterns</div>
+                                <div class="card-body">Auth Drift · Mass 404 · APAC 503</div>
+                            </div>
+                            <div class="card card-green">
+                                <div class="card-header">TARGET AUDIENCE</div>
+                                <div class="card-title" style="color: var(--accent-green);">All Engineers</div>
+                                <div class="card-body">Backend · Frontend · DevOps · QA</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slide-footer">
+                        <div>OVERVIEW // INTRO</div>
+                        <div class="footer-sources">
+                            <a href="https://status.openai.com" target="_blank" rel="noopener noreferrer" class="source-pill">status.openai.com 🔗</a>
+                            <a href="https://datatracker.ietf.org/doc/html/rfc9110" target="_blank" rel="noopener noreferrer" class="source-pill">RFC 9110 🔗</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 02 ==================== -->
+            <section class="slide">
+                <div class="slide-container">
+                    <div class="slide-header">
+                        <div class="header-left">
+                            <div class="terminal-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+                            <span class="header-path">incidents // timeline-hook.log</span>
+                        </div>
+                        <div class="header-badge"><span>HOOK: 3 SELECTED INCIDENTS</span></div>
+                    </div>
+
+                    <div class="slide-body">
+                        <div class="eyebrow reveal">3 case study tiêu biểu trong 16 ngày (20/8 – 4/9/2026)</div>
+                        <h2 class="slide-title reveal">Cùng 1 Platform, 3 Failure Modes Khác Nhau</h2>
+
+                        <div class="grid-3 reveal" style="margin-top: 20px;">
+                            <div class="card card-red">
+                                <div class="card-header">
+                                    <span>CASE 1 — 20 THÁNG 8</span>
+                                    <span style="color: var(--accent-red)">~52m alert window</span>
+                                </div>
+                                <div class="card-title">Auth Verification Failed</div>
+                                <div class="card-body">
+                                    <p style="color: var(--accent-red); font-family: var(--font-mono); font-size: 15px; margin-bottom: 10px;">
+                                        Error: "Unable to log in"
+                                    </p>
+                                    <ul>
+                                        <li><strong>Impact:</strong> Login/signup web bị chặn hoàn toàn</li>
+                                        <li><strong>Window:</strong> 00:02–00:54 UTC (~52m theo OpenAI Status)</li>
+                                        <li><strong>Cause:</strong> Auth config drift (OpenAI Postmortem)</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card card-amber">
+                                <div class="card-header">
+                                    <span>CASE 2 — 3 THÁNG 9</span>
+                                    <span style="color: var(--accent-amber)">~2h 12m status</span>
+                                </div>
+                                <div class="card-title">Elevated Errors / HTTP 404 User Symptoms</div>
+                                <div class="card-body">
+                                    <p style="color: var(--accent-amber); font-family: var(--font-mono); font-size: 15px; margin-bottom: 10px;">
+                                        Incident: 19 components affected
+                                    </p>
+                                    <ul>
+                                        <li><strong>Impact:</strong> ChatGPT, Claude, Grok cùng sập 1 ngày</li>
+                                        <li><strong>Scope:</strong> Toàn cầu (trùng ra mắt GPT-6 Astra)</li>
+                                        <li><strong>Cause:</strong> Chưa có RCA chính thức (sự cố chồng lấn)</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card card-purple">
+                                <div class="card-header">
+                                    <span>CASE 3 — 4 THÁNG 9</span>
+                                    <span style="color: var(--accent-purple)">~3h 46m</span>
+                                </div>
+                                <div class="card-title">HTTP 503 Unavailable</div>
+                                <div class="card-body">
+                                    <p style="color: var(--accent-purple); font-family: var(--font-mono); font-size: 15px; margin-bottom: 10px;">
+                                        Error: 6 services affected
+                                    </p>
+                                    <ul>
+                                        <li><strong>Impact:</strong> Riêng khu vực APAC (IN, VN, MY, PH...)</li>
+                                        <li><strong>Window:</strong> OpenAI: ~3h 46m / StatusGator: ~3h 50m</li>
+                                        <li><strong>Status:</strong> Đã phục hồi hoàn toàn</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="callout reveal">
+                            <strong>Góc nhìn kỹ thuật:</strong> 3 sự cố được chọn đại diện cho 3 tầng lỗi khác biệt: Auth Gateway (Lỗi cấu hình), Mạng/Hạ tầng diện rộng (Sự cố chồng lấn đa bên), và Regional Service Degradation.
+                        </div>
+                    </div>
+
+                    <div class="slide-footer">
+                        <div>TIMELINE // 3 OUTAGES IN 16 DAYS</div>
+                        <div class="footer-sources">
+                            <a href="https://status.openai.com/history" target="_blank" rel="noopener noreferrer" class="source-pill">status.openai.com/history 🔗</a>
+                            <a href="https://statusgator.com" target="_blank" rel="noopener noreferrer" class="source-pill">statusgator.com 🔗</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 03 ==================== -->
+            <section class="slide">
+                <div class="slide-container">
+                    <div class="slide-header">
+                        <div class="header-left">
+                            <div class="terminal-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+                            <span class="header-path">architecture // failure-layers.matrix</span>
+                        </div>
+                        <div class="header-badge"><span>SYSTEM ARCHITECTURE</span></div>
+                    </div>
+
+                    <div class="slide-body">
+                        <div class="eyebrow reveal">Conceptual Architecture Failure Taxonomy</div>
+                        <h2 class="slide-title reveal">6 Tầng Kiến Trúc Có Thể Gây Sập Dịch Vụ</h2>
+                        <p style="color: var(--text-dim); font-size: 15px; margin-top: -10px; margin-bottom: 18px; font-family: var(--font-mono);">* Mô hình phân tầng sự cố khái niệm — dùng để đối chiếu tư duy debug, không phản ánh nguyên văn kiến trúc nội bộ của OpenAI.</p>
+
+                        <div class="grid-3x2 reveal" style="margin-top: 10px;">
+                            <div class="card">
+                                <div class="card-header">TẦNG 1</div>
+                                <div class="card-title">1. Routing / Proxy</div>
+                                <div class="card-body">Reverse Proxy Misconfiguration. Nginx/ALB/API Gateway route không match hoặc routing rule hỏng → trả về 404/502.</div>
+                            </div>
+                            <div class="card">
+                                <div class="card-header">TẦNG 2</div>
+                                <div class="card-title">2. CDN / Edge</div>
+                                <div class="card-body">CDN / Edge Layer Failure. CDN purge sai, edge rule chặn nhầm, WAF mitigation block sai → 404/403.</div>
+                            </div>
+                            <div class="card card-red">
+                                <div class="card-header">TẦNG 3</div>
+                                <div class="card-title">3. Deployment</div>
+                                <div class="card-body">Blue-Green / Canary Gone Wrong. Version mới chưa tương thích hoặc xung đột cấu hình. <span style="color: var(--accent-red)">[VỤ 20/8: config drift]</span></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-header">TẦNG 4</div>
+                                <div class="card-title">4. DNS / Discovery</div>
+                                <div class="card-body">DNS record cũ chưa TTL expire, service discovery deregister microservice quá sớm khiến endpoint biến mất.</div>
+                            </div>
+                            <div class="card card-amber">
+                                <div class="card-header">TẦNG 5</div>
+                                <div class="card-title">5. Auth / Session</div>
+                                <div class="card-body">Auth Service Sập → Toàn Bộ Bị Chặn. Auth là single point of failure nằm chắn trước gateway. <span style="color: var(--accent-amber)">[VỤ 20/8]</span></div>
+                            </div>
+                            <div class="card card-purple">
+                                <div class="card-header">TẦNG 6</div>
+                                <div class="card-title">6. Regional / Capacity</div>
+                                <div class="card-body">Regional Service Degradation → 503 cho một khu vực. Có thể liên quan đến capacity hoặc upstream failure; RCA nội bộ chưa được công bố. <span style="color: var(--accent-purple)">[VỤ 4/9: APAC]</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slide-footer">
+                        <div>ARCHITECTURE // 6 FAILURE LAYERS</div>
+                        <div class="footer-sources">
+                            <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Status" target="_blank" rel="noopener noreferrer" class="source-pill">MDN HTTP Status Codes 🔗</a>
+                            <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-15" target="_blank" rel="noopener noreferrer" class="source-pill">RFC 9110 §15 🔗</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 04 (DIVIDER) ==================== -->
+            <section class="slide divider-slide">
+                <div class="divider-content">
+                    <div class="divider-tag reveal">// CASE STUDY 01</div>
+                    <h1 class="divider-title reveal" style="color: var(--accent-red);">ChatGPT — 20 August 2026</h1>
+                    <p class="divider-desc reveal">
+                        Sự cố Auth kéo dài ~52 phút (00:02–00:54 UTC theo OpenAI Status). Auth verification failure biến thành "Not Found" trên giao diện Web.
+                    </p>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 05 ==================== -->
+            <section class="slide">
+                <div class="slide-container">
+                    <div class="slide-header">
+                        <div class="header-left">
+                            <div class="terminal-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+                            <span class="header-path">case-01 // 20-aug-auth-drift.md</span>
+                        </div>
+                        <div class="header-badge"><span>INCIDENT 01 ANALYSIS</span></div>
+                    </div>
+
+                    <div class="slide-body">
+                        <div class="eyebrow reveal">20 Aug 2026 · 00:02–00:54 UTC (~52m theo OpenAI Status)</div>
+                        <h2 class="slide-title reveal">"Chatgpt.com is down — all signups and logins are down"</h2>
+
+                        <div class="grid-2 reveal" style="margin-top: 16px;">
+                            <div class="card card-red">
+                                <div class="card-header">TRIỆU CHỨNG (USER THẤY GÌ?)</div>
+                                <div class="card-title">Client-side Symptoms</div>
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Không đăng nhập/đăng ký được trên giao diện Web (Consumer UI)</li>
+                                        <li>Lỗi console: <code style="color: var(--accent-red)">unable to fetch authentication verification keys</code></li>
+                                        <li>API direct endpoints vẫn hoạt động bình thường — chỉ web auth flow bị ảnh hưởng</li>
+                                        <li>macOS Desktop app vẫn hoạt động bình thường (ghi nhận bởi 9to5Mac)</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card card-green">
+                                <div class="card-header">ROOT CAUSE (THEO OPENAI POSTMORTEM WRITE-UP)</div>
+                                <div class="card-title">Deployment &amp; Config Drift</div>
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Triển khai phiên bản mới của authentication service</li>
+                                        <li>2 cấu hình không tương thích cùng tồn tại đồng thời (config drift)</li>
+                                        <li>Auth requests fail hàng loạt khi verify public keys</li>
+                                        <li><strong>Khắc phục:</strong> Rollback &amp; loại bỏ config xung đột → khắc phục hoàn toàn sau ~52 phút</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flow-diagram reveal">
+                            <div class="flow-step">Deployment Auth Service</div>
+                            <div class="flow-arrow">→</div>
+                            <div class="flow-step" style="border-color: var(--accent-red); color: var(--accent-red);">2 Config Xung Đột (Drift)</div>
+                            <div class="flow-arrow">→</div>
+                            <div class="flow-step" style="border-color: var(--accent-red); color: var(--accent-red);">Auth Keys Verification Fail</div>
+                            <div class="flow-arrow">→</div>
+                            <div class="flow-step" style="background: rgba(244, 63, 94, 0.15);">ChatGPT UI Down (~52m)</div>
+                        </div>
+                    </div>
+
+                    <div class="slide-footer">
+                        <div>CASE STUDY 01 // 20 AUG AUTH DRIFT</div>
+                        <div class="footer-sources">
+                            <a href="https://status.openai.com/incidents/01M0E7K87VJNMGW0QTMHPEQQ39" target="_blank" rel="noopener noreferrer" class="source-pill">OpenAI Postmortem Write-up 🔗</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 06 ==================== -->
+            <section class="slide">
+                <div class="slide-container">
+                    <div class="slide-header">
+                        <div class="header-left">
+                            <div class="terminal-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+                            <span class="header-path">case-01 // auth-to-404-lessons.md</span>
+                        </div>
+                        <div class="header-badge"><span>LESSONS LEARNED</span></div>
+                    </div>
+
+                    <div class="slide-body">
+                        <div class="eyebrow reveal">Case Study 1: Architectural Insights</div>
+                        <h2 class="slide-title reveal">Khi Auth Sập, Tại Sao User Có Thể Thấy 404?</h2>
+
+                        <div class="grid-2 reveal" style="margin-top: 16px;">
+                            <div class="card">
+                                <div class="card-header">TẠI SAO TRẢ 404 THAY VÌ 401/403?</div>
+                                <div class="card-title">Architectural Masking &amp; Routing Fallback</div>
+                                <div class="card-body">
+                                    <ul>
+                                        <li><strong>Security &amp; Privacy (RFC 9110 §15.5.5):</strong> Origin server có thể trả 404 để che giấu sự tồn tại của tài nguyên nếu request chưa qua xác thực hợp lệ.</li>
+                                        <li><strong>Gateway / Ingress Layer:</strong> Khi Auth verification fail tại gateway, request bị chặn ngay lập tức, không được proxy vào backend route.</li>
+                                        <li><strong>SPA Client-Side Fallback:</strong> Single Page App không nhận được auth state hợp lệ, router ở client không match view và rơi về route 404 mặc định.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card card-red">
+                                <div class="card-header">BẪY GIÁM SÁT KHI AUTH SẬP</div>
+                                <div class="card-title">The Silent Failure Trap (Khái Niệm Vận Hành)</div>
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Requests bị chặn/reject ngay từ cổng Auth layer trước khi tới API core.</li>
+                                        <li>Core backend hoàn toàn khỏe mạnh (CPU thấp, error rate = 0) vì không nhận traffic.</li>
+                                        <li>Monitoring nếu chỉ bám vào backend metrics 🟢 <em>sẽ thấy hoàn toàn bình thường</em>.</li>
+                                        <li>User thực tế chỉ thấy lỗi 404 hoặc blank page, tạo nên độ trễ phát hiện sự cố.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="callout callout-green reveal">
+                            <strong>Cam kết khắc phục của OpenAI (Postmortem Write-up):</strong> (1) Tự động dọn dẹp stale configuration, (2) Cơ chế staged recovery &amp; rollback tự động, (3) Pre-deployment validation &amp; hệ thống cảnh báo xung đột, (4) Tăng cường auth resilience.
+                        </div>
+                    </div>
+
+                    <div class="slide-footer">
+                        <div>CASE STUDY 01 // ARCHITECTURAL MASKING</div>
+                        <div class="footer-sources">
+                            <a href="https://status.openai.com/incidents/01M0E7K87VJNMGW0QTMHPEQQ39" target="_blank" rel="noopener noreferrer" class="source-pill">OpenAI Postmortem 🔗</a>
+                            <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.5" target="_blank" rel="noopener noreferrer" class="source-pill">RFC 9110 §15.5.5 🔗</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 07 (DIVIDER) ==================== -->
+            <section class="slide divider-slide">
+                <div class="divider-content">
+                    <div class="divider-tag reveal">// CASE STUDY 02</div>
+                    <h1 class="divider-title reveal" style="color: var(--accent-amber);">ChatGPT + Codex — 3 September 2026</h1>
+                    <p class="divider-desc reveal">
+                        ~2h 12m status alert. 19 components sập trên status.openai.com. Trùng ngày Claude &amp; xAI gặp sự cố. RCA chính thức chưa công bố.
+                    </p>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 08 ==================== -->
+            <section class="slide">
+                <div class="slide-container">
+                    <div class="slide-header">
+                        <div class="header-left">
+                            <div class="terminal-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+                            <span class="header-path">case-02 // multi-provider-overlap.stat</span>
+                        </div>
+                        <div class="header-badge"><span>INCIDENT 02 &amp; OVERLAPPING OUTAGES</span></div>
+                    </div>
+
+                    <div class="slide-body">
+                        <div class="eyebrow reveal">03 Sep 2026 · ~14:43–16:55 UTC (~2h 12m status alert window)</div>
+                        <h2 class="slide-title reveal">"Elevated Errors Across ChatGPT &amp; Codex" — Sự Cố Chồng Lấn</h2>
+
+                        <div class="grid-4 reveal" style="margin-bottom: 20px;">
+                            <div class="stat-box" style="padding: 16px 20px;">
+                                <div class="stat-number" style="color: var(--accent-red); font-size: 38px;">19</div>
+                                <div class="stat-label">Components Affected (Status)</div>
+                            </div>
+                            <div class="stat-box" style="padding: 16px 20px;">
+                                <div class="stat-number" style="color: var(--accent-amber); font-size: 38px;">~2h 12m</div>
+                                <div class="stat-label">Alert Duration (OpenAI)</div>
+                            </div>
+                            <div class="stat-box" style="padding: 16px 20px;">
+                                <div class="stat-number" style="color: var(--accent-purple); font-size: 38px;">3</div>
+                                <div class="stat-label">Platforms Gặp Lỗi Cùng Ngày</div>
+                            </div>
+                            <div class="stat-box" style="padding: 16px 20px;">
+                                <div class="stat-number" style="color: var(--accent-cyan); font-size: 38px;">HTTP 404</div>
+                                <div class="stat-label">User-Observed Symptom</div>
+                            </div>
+                        </div>
+
+                        <div class="grid-2 reveal" style="gap: 24px;">
+                            <div class="card card-amber">
+                                <div class="card-header">1. BLAST RADIUS (THEO STATUS.OPENAI.COM)</div>
+                                <div class="card-title" style="font-size: 20px;">19 Components Suy Giảm Hoạt Động</div>
+                                <div class="card-body" style="font-size: 15px; line-height: 1.6;">
+                                    <ul>
+                                        <li><strong>Phạm vi công bố:</strong> 15 ChatGPT + 4 Codex components bị degraded/outage (Web UI, Conversations, Voice, Codex Cloud...).</li>
+                                        <li><strong>Triệu chứng:</strong> HTTP 404 Not Found &amp; lỗi kết nối trên giao diện người dùng toàn cầu.</li>
+                                        <li><strong>Bối cảnh:</strong> Trùng ngày công bố GPT-6 Astra.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card card-red">
+                                <div class="card-header">2. GIẢ THUYẾT HẠ TẦNG (MULTI-PROVIDER OVERLAP)</div>
+                                <div class="card-title" style="font-size: 20px;">Sự Trùng Hợp Đa Nền Tảng (Chưa Xác Nhận Causal Link)</div>
+                                <div class="card-body" style="font-size: 15px; line-height: 1.6;">
+                                    <ul>
+                                        <li><strong style="color: var(--accent-red)">[REPORTED] xAI Memphis:</strong> SpaceX (công ty mẹ xAI) thông báo sự cố cluster Memphis ảnh hưởng các compute partners.</li>
+                                        <li><strong>Claude gặp sự cố trước ~75–80m:</strong> (13:26 UTC vs ChatGPT 14:43 UTC) → Cộng đồng đặt giả thuyết về hạ tầng mạng/datacenter ngầm dùng chung, nhưng không có xác nhận chính thức.</li>
+                                        <li><strong>Hiệu ứng Failover Shift:</strong> Người dùng &amp; công cụ lập trình tự động chuyển hướng request sang model khác khi gặp lỗi.</li>
+                                        <li><strong>Google Gemini:</strong> Không ghi nhận sự cố tương ứng trên Google Status dashboard.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="callout reveal" style="margin-top: 18px; padding: 12px 20px; font-size: 15px;">
+                            <strong>Lưu Ý Phân Biệt Fact &amp; Giả Thuyết:</strong> Việc 19 components sập và nhiều nền tảng cùng gặp trục trặc trong ngày là sự thật ghi nhận. Tuy nhiên, giả thuyết "dùng chung backbone/GPU cascade" chưa từng được OpenAI hay Anthropic xác nhận trong bất kỳ RCA chính thức nào.
+                        </div>
+                    </div>
+
+                    <div class="slide-footer">
+                        <div>CASE STUDY 02 // MULTI-PROVIDER OVERLAP</div>
+                        <div class="footer-sources">
+                            <a href="https://status.openai.com/incidents/01M1KWEDH417T2CF44YYHZDFCR" target="_blank" rel="noopener noreferrer" class="source-pill">status.openai.com Incident 🔗</a>
+                            <a href="https://www.wired.com/story/nobody-is-saying-why-openai-and-anthropic-had-outages-today/" target="_blank" rel="noopener noreferrer" class="source-pill">WIRED Article 🔗</a>
+                            <a href="https://news.ycombinator.com/item?id=49551096" target="_blank" rel="noopener noreferrer" class="source-pill">Hacker News 🔗</a>
+                            <a href="https://statusgator.com" target="_blank" rel="noopener noreferrer" class="source-pill">StatusGator 🔗</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 09 (DIVIDER) ==================== -->
+            <section class="slide divider-slide">
+                <div class="divider-content">
+                    <div class="divider-tag reveal">// CASE STUDY 03</div>
+                    <h1 class="divider-title reveal" style="color: var(--accent-purple);">ChatGPT APAC — 4 September 2026</h1>
+                    <p class="divider-desc reveal">
+                        ~3h 46m (OpenAI Status) / ~3h 50m (StatusGator). HTTP 503 Service Unavailable. 6 services ảnh hưởng tại khu vực APAC. Đã phục hồi.
+                    </p>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 10 ==================== -->
+            <section class="slide">
+                <div class="slide-container">
+                    <div class="slide-header">
+                        <div class="header-left">
+                            <div class="terminal-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+                            <span class="header-path">case-03 // 04-sep-apac-503.md</span>
+                        </div>
+                        <div class="header-badge"><span>INCIDENT 03 ANALYSIS</span></div>
+                    </div>
+
+                    <div class="slide-body">
+                        <div class="eyebrow reveal">4 Sep 2026 · 07:00–10:46 UTC (~3h 46m theo OpenAI / ~3h 50m theo StatusGator)</div>
+                        <h2 class="slide-title reveal">"Users in APAC Region May Face Increased Error Rate" — 503</h2>
+
+                        <div class="grid-2 reveal" style="margin-top: 16px;">
+                            <div class="card card-purple">
+                                <div class="card-header">SCOPE: KHU VỰC APAC (OPENAI STATUS)</div>
+                                <div class="card-title">Phạm Vi &amp; Ghi Nhận Phản Ánh</div>
+                                <div class="card-body">
+                                    <ul>
+                                        <li><strong>6 services bị ảnh hưởng (OpenAI Status):</strong> ChatGPT, Work, Image Gen, File Upload, Voice, Codex Cloud.</li>
+                                        <li><strong>Khu vực ghi nhận phản ánh:</strong> Ấn Độ, Việt Nam, Malaysia, Philippines, Indonesia, Campuchia...</li>
+                                        <li><strong>Khắc phục hoàn toàn:</strong> OpenAI thông báo toàn bộ dịch vụ đã khôi phục sau gần 4 giờ.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">QUY CHUẨN RFC 9110 &amp; DIỄN GIẢI KỸ THUẬT</div>
+                                <div class="card-title">503 Service Unavailable vs 404</div>
+                                <div class="card-body">
+                                    <ul>
+                                        <li><strong>HTTP 503 (RFC 9110 §15.6.4):</strong> Server hiện không sẵn sàng xử lý request, thường do quá tải tạm thời (temporary overload) hoặc đang bảo trì (maintenance).</li>
+                                        <li><strong>HTTP 404 (RFC 9110 §15.5.5):</strong> Server không tìm thấy representation phù hợp hoặc từ chối tiết lộ tài nguyên.</li>
+                                        <li><strong>Góc nhìn kiến trúc (Diễn giải):</strong> Về mặt kiến trúc, 503 có thể phù hợp với overload hoặc upstream failure, nhưng đây là diễn giải kỹ thuật chứ không phải RCA đã được xác nhận từ OpenAI.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid-3 reveal" style="margin-top: 20px;">
+                            <div class="stat-box" style="border-color: rgba(244, 63, 94, 0.3);">
+                                <div class="stat-label">20/8 INCIDENT</div>
+                                <div style="font-family: var(--font-mono); font-size: 20px; color: var(--accent-red); margin-top: 6px;">Global Auth Drift (~52m)</div>
+                            </div>
+                            <div class="stat-box" style="border-color: rgba(251, 191, 36, 0.3);">
+                                <div class="stat-label">3/9 INCIDENT</div>
+                                <div style="font-family: var(--font-mono); font-size: 20px; color: var(--accent-amber); margin-top: 6px;">Global Degradation (~2h 12m alert)</div>
+                            </div>
+                            <div class="stat-box" style="border-color: rgba(192, 132, 252, 0.3);">
+                                <div class="stat-label">4/9 INCIDENT</div>
+                                <div style="font-family: var(--font-mono); font-size: 20px; color: var(--accent-purple); margin-top: 6px;">APAC Regional 503 (~3h 46m)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slide-footer">
+                        <div>CASE STUDY 03 // APAC REGIONAL 503</div>
+                        <div class="footer-sources">
+                            <a href="https://status.openai.com" target="_blank" rel="noopener noreferrer" class="source-pill">status.openai.com 🔗</a>
+                            <a href="https://statusgator.com" target="_blank" rel="noopener noreferrer" class="source-pill">StatusGator 🔗</a>
+                            <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-15.6.4" target="_blank" rel="noopener noreferrer" class="source-pill">RFC 9110 §15.6.4 🔗</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 11 ==================== -->
+            <section class="slide">
+                <div class="slide-container">
+                    <div class="slide-header">
+                        <div class="header-left">
+                            <div class="terminal-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+                            <span class="header-path">analysis // incident-comparison.tbl</span>
+                        </div>
+                        <div class="header-badge"><span>COMPARATIVE MATRIX</span></div>
+                    </div>
+
+                    <div class="slide-body">
+                        <div class="eyebrow reveal">Tổng Quan Đối Chiếu</div>
+                        <h2 class="slide-title reveal">So Sánh 3 Vụ ChatGPT Outage</h2>
+
+                        <table class="styled-table reveal" style="margin-top: 10px;">
+                            <thead>
+                                <tr>
+                                    <th>Tiêu chí</th>
+                                    <th style="color: var(--accent-red)">20/8 Auth Config Drift</th>
+                                    <th style="color: var(--accent-amber)">3/9 Mass 404 (Sự cố chồng lấn)</th>
+                                    <th style="color: var(--accent-purple)">4/9 APAC Regional 503</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Error Code</strong></td>
+                                    <td><span class="tag tag-red">Auth fail → 404</span></td>
+                                    <td><span class="tag tag-amber">HTTP 404</span></td>
+                                    <td><span class="tag tag-purple">HTTP 503</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tầng nghi vấn (Heuristic)</strong></td>
+                                    <td>Auth Service (Layer 5)</td>
+                                    <td>Routing / Infra (OpenAI: Routing error)</td>
+                                    <td>Regional Capacity (Layer 6)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Blast Radius</strong></td>
+                                    <td>Toàn cầu · Web UI Only</td>
+                                    <td>Toàn cầu · 19 Components</td>
+                                    <td>Khu vực · APAC Only (6 Services)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Thời gian ghi nhận</strong></td>
+                                    <td>~52m (OpenAI Status)</td>
+                                    <td>~2h 12m status alert</td>
+                                    <td>~3h 46m (OpenAI) / ~3h 50m (SG)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Multi-platform</strong></td>
+                                    <td>Chỉ ChatGPT ❌</td>
+                                    <td>ChatGPT + Claude + Grok trùng ngày ✅</td>
+                                    <td>Chỉ ChatGPT ❌</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Trạng thái RCA</strong></td>
+                                    <td>Postmortem Published ✅</td>
+                                    <td>Chưa có RCA chính thức ❌</td>
+                                    <td>Chưa có RCA chi tiết ❌</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="grid-2 reveal" style="margin-top: 16px;">
+                            <div class="callout callout-amber" style="margin-top:0; font-size:16px;">
+                                <strong>Pattern:</strong> Cùng 1 platform, 3 failure modes khác nhau. Mỗi vụ cần một phương pháp và góc nhìn debug hoàn toàn riêng biệt.
+                            </div>
+                            <div class="callout callout-red" style="margin-top:0; font-size:16px;">
+                                <strong>Bài Học Vận Hành:</strong> Khi hệ thống mở rộng quy mô lớn, ranh giới lỗi dịch chuyển: từ code logic sang cấu hình đồng bộ, routing gateway và năng lực chịu tải phân vùng.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slide-footer">
+                        <div>ANALYSIS // COMPARATIVE MATRIX</div>
+                        <div class="footer-sources">
+                            <a href="https://status.openai.com/history" target="_blank" rel="noopener noreferrer" class="source-pill">OpenAI Status History 🔗</a>
+                            <a href="https://statusgator.com" target="_blank" rel="noopener noreferrer" class="source-pill">StatusGator 🔗</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 12 ==================== -->
+            <section class="slide">
+                <div class="slide-container">
+                    <div class="slide-header">
+                        <div class="header-left">
+                            <div class="terminal-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+                            <span class="header-path">recommendations // action-items.checklist</span>
+                        </div>
+                        <div class="header-badge"><span>ENGINEERING RECOMMENDATIONS</span></div>
+                    </div>
+
+                    <div class="slide-body">
+                        <div class="eyebrow reveal">Khuyến Nghị Kỹ Thuật: Phòng Ngừa &amp; Giảm Thiểu</div>
+                        <h2 class="slide-title reveal">Cam Kết Khắc Phục Của OpenAI &amp; Khuyến Nghị Cho Team</h2>
+
+                        <div class="grid-2x2 reveal" style="margin-top: 16px;">
+                            <div class="card card-green">
+                                <div class="card-header">1. DEPLOYMENT SAFETY (TỪ POSTMORTEM OPENAI)</div>
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Config validation trước deploy — schema check &amp; diff review tự động</li>
+                                        <li>Staged recovery &amp; automated rollback trigger khi error rate vượt ngưỡng</li>
+                                        <li>Tự động dọn sạch stale configuration, tránh xung đột cấu hình</li>
+                                        <li>Thêm pre-deployment validation và cảnh báo sớm về incompatibilities</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card card-amber">
+                                <div class="card-header">2. AUTH RESILIENCE (BEST PRACTICES)</div>
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Auth failure → graceful degradation, tránh tình trạng block all-or-nothing</li>
+                                        <li>Cache auth public keys / sessions ngắn hạn để chịu đựng restart service</li>
+                                        <li>Chuẩn hóa HTTP status codes (401 vs 403 vs 404 đúng RFC 9110)</li>
+                                        <li>Auth service cần dedicated synthetic monitoring &amp; alerting riêng</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card card-cyan">
+                                <div class="card-header">3. GATEWAY &amp; CLIENT RESILIENCE</div>
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Single Page Apps (SPA): Catch-all fallback route cần thông báo rõ ràng, tránh 404 mập mờ</li>
+                                        <li>Edge rules / CDN config changes bắt buộc phải đi qua quy trình CI/CD</li>
+                                        <li>Tách biệt health check endpoint của ingress routing và core backend</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="card card-purple">
+                                <div class="card-header">4. DEPENDENCY &amp; FAILOVER MANAGEMENT</div>
+                                <div class="card-body">
+                                    <ul>
+                                        <li>Bản đồ hóa phụ thuộc (Dependency Mapping) cả upstream API lẫn hạ tầng vật lý ngầm</li>
+                                        <li>Client-side retry logic bắt buộc có jitter + retry budget tránh cascading retry storm</li>
+                                        <li>Giám sát độ trễ và tỉ lệ lỗi phân theo từng vùng địa lý (per-region alerting)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slide-footer">
+                        <div>RECOMMENDATIONS // ACTION ITEMS</div>
+                        <div class="footer-sources">
+                            <a href="https://status.openai.com/incidents/01M0E7K87VJNMGW0QTMHPEQQ39/write-up" target="_blank" rel="noopener noreferrer" class="source-pill">OpenAI Fix Commitments 🔗</a>
+                            <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-15.6.4" target="_blank" rel="noopener noreferrer" class="source-pill">RFC 9110 §15.6.4 🔗</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 13 ==================== -->
+            <section class="slide">
+                <div class="slide-container">
+                    <div class="slide-header">
+                        <div class="header-left">
+                            <div class="terminal-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+                            <span class="header-path">observability // detection-gap-analysis.log</span>
+                        </div>
+                        <div class="header-badge"><span>OBSERVABILITY INSIGHTS</span></div>
+                    </div>
+
+                    <div class="slide-body">
+                        <div class="eyebrow reveal">Mô Hình Minh Họa Observability (Illustrative Concept)</div>
+                        <h2 class="slide-title reveal">Tại Sao Monitoring Ở Backend Có Thể Bỏ Lọt Lỗi User Thấy?</h2>
+
+                        <div class="grid-2 reveal" style="margin-top: 16px;">
+                            <div>
+                                <div class="code-block" style="border-color: rgba(244, 63, 94, 0.3);">
+                                    <span class="comment">// [SỐ LIỆU MINH HỌA - Ngưỡng ví dụ, không phải telemetry OpenAI]</span><br>
+                                    <span class="comment">// ❌ SAI: Chỉ Monitor Backend Core Metrics</span><br>
+                                    core_requests_total{status="200"}  <span class="string">✅ normal</span><br>
+                                    core_service_errors_total          <span class="string">✅ = 0</span><br>
+                                    core_api_latency_p99               <span class="string">✅ normal</span><br><br>
+                                    <span class="comment">// Nhưng request rụng ở các tầng trước khi chạm backend...</span><br>
+                                    <span class="keyword">ingress_auth_rejection:</span> active   <span class="comment">← chặn tại cổng Auth</span><br>
+                                    <span class="keyword">edge_routing_failure:</span>   active   <span class="comment">← 404 tại proxy/CDN</span><br>
+                                    <span class="keyword">regional_pool_overload:</span> active   <span class="comment">← 503 tại phân vùng</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="code-block" style="border-color: rgba(52, 211, 153, 0.3);">
+                                    <span class="comment">// ✅ ĐÚNG: Giám Sát Mọi Chặng (Full-Path Observability)</span><br>
+                                    synthetic_canary:  real headless browser → full user flow<br>
+                                    ingress_drop_rate: alert on gateway vs backend traffic gap<br>
+                                    auth_success_rate: alert if success rate drops below SLO<br>
+                                    app_request_drop:  alert if global traffic drops unexpectedly<br>
+                                    regional_5xx_rate: per-region latency &amp; error alerts<br><br>
+                                    <span class="comment">// Golden signal: traffic drop anomaly at gateway</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="callout callout-amber reveal">
+                            <strong>Golden Signal:</strong> <code style="color: var(--accent-amber)">traffic_drop_anomaly = proxy green + backend idle = something blocking upstream</code>.<br>
+                            Không chỉ đo lường metrics ở backend. Giám sát error rate ở từng hop mạng và từng phân vùng địa lý. Synthetic canary là một trong những phương pháp hiệu quả nhất để phát hiện lỗi người dùng thực tế đang gặp.
+                        </div>
+                    </div>
+
+                    <div class="slide-footer">
+                        <div>OBSERVABILITY // GAP ANALYSIS</div>
+                        <div class="footer-sources">
+                            <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-15.5.5" target="_blank" rel="noopener noreferrer" class="source-pill">RFC 9110 §15.5.5 🔗</a>
+                            <a href="https://datatracker.ietf.org/doc/html/rfc9110#section-15.6.4" target="_blank" rel="noopener noreferrer" class="source-pill">RFC 9110 §15.6.4 🔗</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== SLIDE 14 ==================== -->
+            <section class="slide">
+                <div class="slide-container">
+                    <div class="slide-header">
+                        <div class="header-left">
+                            <div class="terminal-dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
+                            <span class="header-path">discussion // qa-session.interactive</span>
+                        </div>
+                        <div class="header-badge"><span>CLOSING & Q&A</span></div>
+                    </div>
+
+                    <div class="slide-body" style="align-items: center; justify-content: center; text-align: center;">
+                        <h1 class="slide-title reveal" style="font-size: 72px; margin-bottom: 24px; color: var(--accent-cyan);">
+                            CẢM ƠN ĐÃ LẮNG NGHE!
+                        </h1>
+                        <p class="slide-subtitle reveal" style="font-size: 28px; color: var(--text-muted);">
+                            Q&A · Thảo Luận
+                        </p>
+                    </div>
+
+                    <div class="slide-footer">
+                        <div>CLOSING // Q&amp;A</div>
+                        <div class="footer-sources">
+                            <a href="https://status.openai.com" target="_blank" rel="noopener noreferrer" class="source-pill">OpenAI Status 🔗</a>
+                            <a href="https://www.wired.com/story/nobody-is-saying-why-openai-and-anthropic-had-outages-today/" target="_blank" rel="noopener noreferrer" class="source-pill">WIRED 🔗</a>
+                            <a href="https://news.ycombinator.com/item?id=49551096" target="_blank" rel="noopener noreferrer" class="source-pill">Hacker News 🔗</a>
+                            <a href="https://statusgator.com" target="_blank" rel="noopener noreferrer" class="source-pill">StatusGator 🔗</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ===========================================
+       SLIDE PRESENTATION CONTROLLER SCRIPT
+       =========================================== -->
+    <script>
+        class SlidePresentation {
+            constructor() {
+                this.slides = document.querySelectorAll('.slide');
+                this.currentSlide = 0;
+                this.stage = document.getElementById('deckStage');
+                this.progressBar = document.getElementById('progressBar');
+                this.slideCounter = document.getElementById('slideCounter');
+                this.navDotsContainer = document.getElementById('navDots');
+                
+                this.setupStageScale();
+                this.setupNavDots();
+                this.setupKeyboardNav();
+                this.setupTouchNav();
+                this.setupButtonNav();
+                this.setupInlineEditor();
+                
+                this.showSlide(0);
+            }
+
+            setupStageScale() {
+                const scale = () => {
+                    const factor = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+                    const x = (window.innerWidth - 1920 * factor) / 2;
+                    const y = (window.innerHeight - 1080 * factor) / 2;
+                    this.stage.style.transform = `translate(${x}px, ${y}px) scale(${factor})`;
+                };
+                scale();
+                window.addEventListener('resize', scale);
+            }
+
+            setupNavDots() {
+                this.navDotsContainer.innerHTML = '';
+                this.slides.forEach((_, index) => {
+                    const dot = document.createElement('div');
+                    dot.classList.add('nav-dot');
+                    if (index === 0) dot.classList.add('active');
+                    dot.addEventListener('click', () => this.showSlide(index));
+                    this.navDotsContainer.appendChild(dot);
+                });
+            }
+
+            setupKeyboardNav() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.target.getAttribute('contenteditable') === 'true') return;
+
+                    if (e.key === 'ArrowRight' || e.code === 'Space' || e.key === ' ' || e.key === 'PageDown') {
+                        e.preventDefault();
+                        this.nextSlide();
+                    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                        e.preventDefault();
+                        this.prevSlide();
+                    } else if (e.key === 'Home') {
+                        e.preventDefault();
+                        this.showSlide(0);
+                    } else if (e.key === 'End') {
+                        e.preventDefault();
+                        this.showSlide(this.slides.length - 1);
+                    }
+                });
+            }
+
+            setupTouchNav() {
+                let startX = 0;
+                let startY = 0;
+                document.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                });
+                document.addEventListener('touchend', (e) => {
+                    if (e.target.getAttribute('contenteditable') === 'true') return;
+                    const diffX = e.changedTouches[0].clientX - startX;
+                    const diffY = e.changedTouches[0].clientY - startY;
+                    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                        if (diffX < 0) this.nextSlide();
+                        else this.prevSlide();
+                    }
+                });
+            }
+
+            setupButtonNav() {
+                document.getElementById('prevBtn').addEventListener('click', () => this.prevSlide());
+                document.getElementById('nextBtn').addEventListener('click', () => this.nextSlide());
+            }
+
+            nextSlide() {
+                if (this.currentSlide < this.slides.length - 1) {
+                    this.showSlide(this.currentSlide + 1);
+                }
+            }
+
+            prevSlide() {
+                if (this.currentSlide > 0) {
+                    this.showSlide(this.currentSlide - 1);
+                }
+            }
+
+            showSlide(index) {
+                this.currentSlide = Math.max(0, Math.min(index, this.slides.length - 1));
+                
+                this.slides.forEach((slide, i) => {
+                    const isActive = i === this.currentSlide;
+                    slide.classList.toggle('active', isActive);
+                    slide.classList.toggle('visible', isActive);
+                });
+
+                // Update Progress Bar
+                const progress = ((this.currentSlide + 1) / this.slides.length) * 100;
+                this.progressBar.style.width = `${progress}%`;
+
+                // Update Counter
+                const formattedCur = String(this.currentSlide + 1).padStart(2, '0');
+                const formattedTotal = String(this.slides.length).padStart(2, '0');
+                this.slideCounter.textContent = `${formattedCur} / ${formattedTotal}`;
+
+                // Update Nav Dots
+                const dots = this.navDotsContainer.querySelectorAll('.nav-dot');
+                dots.forEach((dot, i) => {
+                    dot.classList.toggle('active', i === this.currentSlide);
+                });
+            }
+
+            setupInlineEditor() {
+                const hotzone = document.querySelector('.edit-hotzone');
+                const editToggle = document.getElementById('editToggle');
+                let hideTimeout = null;
+                let isEditing = false;
+
+                const toggleMode = () => {
+                    isEditing = !isEditing;
+                    editToggle.classList.toggle('active', isEditing);
+                    editToggle.textContent = isEditing ? '✓ Done Editing' : '✏️ Edit Mode';
+                    
+                    const editableSelectors = '.slide-title, .slide-subtitle, .card-title, .card-body, .stat-number, .stat-label, .eyebrow, .callout, .divider-title, .divider-desc';
+                    document.querySelectorAll(editableSelectors).forEach(el => {
+                        el.setAttribute('contenteditable', isEditing ? 'true' : 'false');
+                    });
+                };
+
+                hotzone.addEventListener('mouseenter', () => {
+                    clearTimeout(hideTimeout);
+                    editToggle.classList.add('show');
+                });
+                hotzone.addEventListener('mouseleave', () => {
+                    hideTimeout = setTimeout(() => {
+                        if (!isEditing) editToggle.classList.remove('show');
+                    }, 400);
+                });
+
+                editToggle.addEventListener('mouseenter', () => clearTimeout(hideTimeout));
+                editToggle.addEventListener('mouseleave', () => {
+                    hideTimeout = setTimeout(() => {
+                        if (!isEditing) editToggle.classList.remove('show');
+                    }, 400);
+                });
+
+                editToggle.addEventListener('click', toggleMode);
+                hotzone.addEventListener('click', toggleMode);
+
+                document.addEventListener('keydown', (e) => {
+                    if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable')) {
+                        toggleMode();
+                    }
+                });
+            }
+        }
+
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', () => {
+            window.deck = new SlidePresentation();
+        });
+    </script>
+</body>
+</html>

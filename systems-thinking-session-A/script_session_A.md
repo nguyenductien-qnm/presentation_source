@@ -6,7 +6,19 @@ Quy ước: `[ ... ]` là chỉ dẫn sân khấu, không đọc. `(kiểm tra)`
 
 ---
 
+## Phân công người nói
+
+- **Người 1, khoảng 20 phút:** slide 1 đến 10 (cover, WorkOS, code, lộ trình, Queue, Delay) và slide 22 đến 23 (Bốn điều mang về, cầu sang Session B). Người 1 hỏi câu hỏi đầu buổi nên cũng là người chốt câu trả lời.
+- **Người 2, khoảng 20 phút:** slide 11 đến 21 (Catalog, Metastable, vẽ loop, phá loop).
+- **Slide 24 (Nguồn tham khảo):** không ai nói, để trên màn hình lúc hỏi đáp.
+- **Hỏi đáp:** Người 1 trả lời câu về Queue và Delay, Người 2 trả lời câu về Catalog và Metastable. Câu chung thì ai muốn trả lời cũng được.
+- Chỗ bàn giao: sau slide 10 (Người 1 sang Người 2) và sau slide 21 (Người 2 về Người 1). Câu bàn giao nằm ở cuối mục 9, đầu mục 10, cuối mục 17 và đầu mục 18.
+
+---
+
 ## 1. Cover (1:00)
+
+**Người nói: Người 1**
 
 Chào mọi người. Mình bắt đầu bằng một cảnh chắc ai làm hệ thống cũng từng gặp. Đêm có sự cố, cả team vào kênh xử lý. Mọi người đào log, tìm ra lỗi, sửa xong, deploy. Rồi ai đó nhìn lại dashboard, và nó vẫn đỏ. Lỗi hết rồi mà hệ thống vẫn chết.
 
@@ -15,6 +27,8 @@ Chào mọi người. Mình bắt đầu bằng một cảnh chắc ai làm hệ
 Mình sẽ đi qua bốn lớp: hàng đợi, độ trễ, retry, rồi gom lại thành một khái niệm tên là metastable failure. Mỗi lớp mình đều có ví dụ thật. Đây là Session A, phần kỹ thuật. Session B sẽ nhìn cùng loại vòng lặp đó ở phía con người và tổ chức, nên nếu buổi này có chỗ nào nghe quen quen với chuyện team hay chuyện công ty, đó là chủ ý.
 
 ## 2. Hook: WorkOS (2:00)
+
+**Người nói: Người 1**
 
 Mình bắt đầu bằng một sự cố thật. Ngày 16/7/2026, WorkOS bị gián đoạn dịch vụ, khoảng từ tám giờ đến mười giờ mười sáng theo giờ UTC, tức là chừng hai tiếng mười phút. Điều lạ là hệ thống không chết hẳn. Nó vẫn chạy, vẫn nhận request, nhưng gần như không request nào hoàn thành.
 
@@ -29,6 +43,8 @@ Chú ý cách họ viết: một bên là cái làm sự cố bắt đầu, mộ
 [Nếu có thời gian, hỏi khán phòng: ai từng gặp cảnh "restart xong vẫn không hết" chưa? Để một hai người trả lời, rồi nói tiếp.]
 
 ## 2b. Cơ chế: một request giữ hai connection (3:00)
+
+**Người nói: Người 1**
 
 [Slide `hook-code`. Nói trước: đây là code minh họa do mình viết, không phải code của WorkOS.]
 
@@ -48,9 +64,15 @@ Nhưng nó không phải deadlock đúng nghĩa, vì có timeout. Timeout làm r
 
 ## 3. Roadmap (1:00)
 
+**Người nói: Người 1**
+
 Buổi này có bốn lớp, đi từ nền lên đỉnh, và lớp sau dùng kiến thức của lớp trước. Lớp một là Queue: vì sao hệ thống gần đầy lại mong manh. Lớp hai là Delay: vì sao phản ứng nhanh có thể gây dao động. Lớp ba là Catalog: những họ hàng của retry storm mà mình nhặt từ các postmortem thật. Và lớp cuối là metastable failure, nơi mọi thứ hội tụ. Cái thẻ tối ở cuối slide là cao trào, cũng là câu trả lời cho câu hỏi ở đầu buổi.
 
+Phân công: mình nói nửa đầu, tới hết phần Delay. Từ phần Catalog trở đi Người 2 sẽ nói, rồi mình quay lại để chốt.
+
 ## 4. Little's Law (2:30)
+
+**Người nói: Người 1**
 
 Bắt đầu với queue. Có một định luật rất ngắn: L bằng lambda nhân W. L là số request đang ở trong hệ thống, lambda là tốc độ request đến, W là thời gian trung bình mỗi request ở lại.
 
@@ -68,6 +90,8 @@ Nhưng có một cảnh báo: định luật chỉ nói về trung bình. Muốn
 
 ## 5. Đường cong hockey stick (2:30)
 
+**Người nói: Người 1**
+
 [Chỉ vào đồ thị.] Câu hỏi tiếp theo: khi tải tăng, hàng đợi tăng thế nào? Với mô hình đơn giản nhất, một server, request đến ngẫu nhiên, công thức là L bằng rho chia một trừ rho. Rho là mức sử dụng, tức phần trăm thời gian server bận.
 
 Nhìn đồ thị. Ở 70% tải, L khoảng 2,3. Hàng đợi nhỏ, hệ thống ổn. Lên 90%, L bằng 9, gấp khoảng bốn lần. Lên 95%, L bằng 19. Lên 99%, L bằng 99. Đường cong gần như phẳng rồi bỗng vọt lên. Đó là lý do gọi là hockey stick, cây gậy khúc côn cầu.
@@ -84,11 +108,15 @@ Lưu ý trung thực: đây là mô hình M/M/1, giả định request đến th
 
 ## 6. Bài học 01 (1:00)
 
+**Người nói: Người 1**
+
 Bài học đầu tiên: gần đầy là sắp nổ. Ba phản ứng thực tế. Một, để dành headroom. Chạy ở 60 đến 70% thay vì 90% nghe lãng phí, nhưng đó là tiền bảo hiểm cho đoạn dốc của đường cong. Hai, áp backpressure, tức để tầng dưới nói được với tầng trên rằng "đủ rồi, đừng gửi nữa", thay vì cứ nhận hết rồi xếp hàng vô tận. Ba, shed load trước khi chạm ngưỡng: thà từ chối rõ ràng một phần request còn hơn để tất cả đều chậm.
 
 Queue cho mình biết hệ thống mong manh ở đâu. Nhưng nó chưa nói vì sao hệ thống lại dao động. Phần sau sẽ trả lời.
 
 ## 7. Delay mở phần (1:00)
+
+**Người nói: Người 1**
 
 Phần hai. Mình đặt một câu hơi ngược: phản ứng nhanh hơn có thể tệ hơn.
 
@@ -97,6 +125,8 @@ Ai từng tắm vòi nước nóng lạnh ở nhà trọ chắc hiểu. Mình v�
 Trong cuốn Thinking in Systems, Donella Meadows nói delay trong feedback loop là nguyên nhân phổ biến của dao động và overshoot. (kiểm tra: mình dựa vào bản tóm tắt, chưa đối chiếu sách gốc, nên nói "phổ biến", đừng nói "luôn luôn".)
 
 ## 8. Đại lý xe (2:00)
+
+**Người nói: Người 1**
 
 Ví dụ của Meadows cho dễ hình dung. Một đại lý xe thấy bán chạy. Họ đặt thêm xe, nhưng hơi do dự vì không chắc xu hướng có bền không. Xe đến sau một khoảng sản xuất và vận chuyển. Lúc xe về, nhu cầu đã đổi, tồn kho dư. Họ hoảng, cắt đơn quá tay. Rồi lại thiếu xe, và vòng lặp quay lại bước một.
 
@@ -110,6 +140,8 @@ Hai thẻ dưới của slide: phản ứng nhanh trên ít thông tin thì biê
 
 ## 9. Kubernetes HPA (2:00)
 
+**Người nói: Người 1**
+
 Phiên bản kỹ thuật của chuyện này là HPA flapping trong Kubernetes. HPA là Horizontal Pod Autoscaler, thứ tự động tăng giảm số pod theo metric. Hình dung: metric vượt ngưỡng, HPA scale up. Pod mới khởi động mất một lúc, mình cũng đang có delay ở đây. Khi pod mới sẵn sàng, tải mỗi pod giảm, metric xuống dưới ngưỡng, HPA scale down. Capacity giảm, tải mỗi pod tăng lại, metric vượt ngưỡng. Cứ thế lặp trong vài phút, pod sinh ra rồi bị giết liên tục.
 
 Cách chữa có sẵn là cửa sổ ổn định, stabilization window. Mặc định, scale down có cửa sổ 300 giây, scale up là 0 giây. Nghĩa là scale up nhanh, scale down thận trọng. Trong lúc scale down, HPA không đưa số pod xuống dưới mức khuyến nghị cao nhất trong cửa sổ đó. Đây chính là damping, thêm quán tính để hệ thống không giật theo từng nhiễu nhỏ. Lý do chọn bất đối xứng: thiếu capacity gây hại ngay, còn dư capacity chỉ tốn tiền.
@@ -118,7 +150,13 @@ Nhưng damping không miễn phí. Quá nhiều damping thì hệ thống chậm
 
 Một lưu ý cho mọi người: ở slide sau mình sẽ nói retry, và retry cũng là một cơ chế phản hồi có độ trễ. Hãy nhớ hình ảnh vòng lặp scale up, scale down này.
 
+[Bàn giao cho Người 2.] Delay cho mình thấy vì sao một hệ thống dao động, kể cả khi mọi người đều có ý tốt. Giờ Người 2 sẽ cho mình xem cùng một cơ chế lặp lại ở những sự cố thật, từ cache cho tới database.
+
 ## 10. Catalog: khung chung (1:00)
+
+**Người nói: Người 2**
+
+[Nhận từ Người 1.] Cảm ơn bạn. Mình nối tiếp ngay chỗ bạn vừa dừng: delay làm hệ thống dao động, nhưng điều gì xảy ra khi hệ thống bắt đầu lỗi và mọi client đồng loạt thử lại?
 
 Phần ba. Retry storm có họ hàng. Mình dùng một khung bốn bước cho tất cả, để mỗi lần nghe một sự cố mới mọi người có thể tự đặt câu hỏi.
 
@@ -127,6 +165,8 @@ Bước một, trigger: một sự kiện tạm thời. Một đợt traffic, m�
 Ba họ hàng hôm nay: cache stampede, connection pool, và một nhóm các biến thể khác gồm GC death spiral và reconnect storm. Chú ý là mỗi họ hàng đều có điểm chung: cái bị cạn khác nhau, nhưng hình dạng vòng lặp thì giống nhau.
 
 ## 11. Cache stampede (1:30)
+
+**Người nói: Người 2**
 
 Cache stampede: một key nóng hết TTL. Hàng loạt request cùng miss. Tất cả cùng recompute, đập vào backend. Backend chậm đi, key lâu có lại, càng nhiều request miss. Cache vốn sinh ra để che tải, và khi nó mất thì tải thật hiện ra đột ngột.
 
@@ -138,6 +178,8 @@ Một case gần hơn: StrongDM, ngày 1/6/2024. Sau khi nâng cấp database, k
 
 ## 11b. Facebook 2010: hệ thống tự sửa làm hỏng thêm (2:00)
 
+**Người nói: Người 2**
+
 [Slide `case-facebook`.]
 
 Một case lớn và kinh điển: Facebook, ngày 23/9/2010. Site bị gián đoạn khoảng hai tiếng rưỡi, mà Facebook gọi là sự cố tệ nhất của họ trong hơn bốn năm. Họ có một hệ thống tự động kiểm tra giá trị config. Nếu giá trị trong cache bị coi là sai, nó thay bằng bản lấy từ kho lưu trữ chính. Cách này ổn khi lỗi nằm ở cache. Nhưng hôm đó có người đổi giá trị config trong chính kho lưu trữ, hệ thống kiểm tra coi giá trị mới là sai, và mọi client đồng loạt chạy đi sửa bằng cách hỏi một cụm database. Cụm đó nhận hàng trăm nghìn query mỗi giây.
@@ -148,6 +190,8 @@ Hãy để ý hai điều. Thứ nhất, đây đúng là hai khái niệm: mộ
 
 ## 12. Connection pool (2:00)
 
+**Người nói: Người 2**
+
 Quay lại WorkOS, vì nó chính là loại này, và mình đã giải thích cơ chế ở slide trước. Request giữ một connection để chờ connection thứ hai, nên hầu hết connection bị chiếm mà không việc nào hoàn thành. Chỗ này nói nhanh, đừng lặp lại phần code. Cái cần nhấn là kết luận: pool cạn không phải do thiếu connection, mà do connection bị giữ vô ích.
 
 Hai case nữa, để thấy WorkOS không phải ngoại lệ. Val Town: một query deadlock chiếm slot trong pool, và pool không có query timeout, nên slot đó không bao giờ được trả. Gorgias: họ đã có pool và proxy, tức đã làm đúng những việc người ta khuyên, nhưng một edge case về timeout vẫn gây lockup, và dọn backlog mất thêm khoảng một giờ. Bài học: có pool chưa đủ, phải có timeout ở mọi chỗ chờ.
@@ -157,6 +201,8 @@ Cách phá: borrow timeout ngắn, query timeout, giới hạn concurrency. Dòn
 [Hỏi khán phòng.] Ai trong phòng biết borrow timeout của pool chính của mình là bao nhiêu? Nếu mặc định là 30 giây thì với một sự cố kiểu WorkOS, 30 giây là rất lâu.
 
 ## 12b. GC death spiral và reconnect storm (2:00)
+
+**Người nói: Người 2**
 
 Họ hàng thứ ba. Cùng khung bốn bước, nhưng resource bị cạn không phải connection mà là heap, port hoặc luồng xử lý.
 
@@ -172,6 +218,8 @@ Nói rõ nguồn: Cassandra và MongoDB/CockroachDB là guide của vendor Netda
 
 ## 13. Ba trạng thái metastable (2:00)
 
+**Người nói: Người 2**
+
 Phần cuối, cao trào. Một bài báo năm 2021 của Bronson và cộng sự mô tả một hệ thống có ba trạng thái.
 
 Stable: tải thấp, tự hồi phục sau overload tạm thời. Mình bơm một đợt tải, hệ thống chậm đi, rồi tự về lại bình thường. Vulnerable: tải cao, vẫn ổn nếu không có overload tạm thời. Phần lớn hệ thống production nằm ở đây, vì ta tối ưu cho trường hợp thường gặp, ví dụ cache che đi tải thật, hoặc ta chạy ở 85% công suất vì "vẫn ổn mà". Trông bình thường, nhưng một cú đẩy nhỏ là sang trạng thái kế. Metastable: overload tự duy trì sau khi trigger đã hết. Throughput vẫn còn, nghĩa là server vẫn bận, nhưng goodput, tức việc hữu ích hoàn thành, gần như bằng không.
@@ -182,6 +230,8 @@ Hai khái niệm cần nhớ: trigger là sự kiện tạm thời gây overload
 
 ## 13b. AWS DynamoDB 2015: không thể thêm capacity (2:00)
 
+**Người nói: Người 2**
+
 [Slide `case-aws`.]
 
 Ví dụ thứ hai để thấy mô hình này không chỉ của WorkOS và Facebook. AWS, ngày 20/9/2015, DynamoDB ở US-East. Lúc 2 giờ 19 sáng giờ PDT, một sự cố mạng ngắn ảnh hưởng một phần storage server. Các server đó hỏi metadata service để lấy lại danh sách membership. Nhưng vì khách hàng dùng ngày càng nhiều tính năng Global Secondary Indexes, danh sách đó đã phình to, nên phản hồi mất lâu hơn thời gian cho phép. Server lấy membership không kịp thì tự gỡ mình khỏi vòng nhận request, rồi retry. Nhiều server cùng hỏi những danh sách lớn cùng lúc làm metadata service chậm thêm, kéo theo cả những server không liên quan tới sự cố mạng ban đầu cũng không lấy kịp. Tới 2 giờ 37, tỉ lệ lỗi của khách hàng khoảng 55%.
@@ -190,6 +240,8 @@ Ví dụ thứ hai để thấy mô hình này không chỉ của WorkOS và Fac
 
 ## 14. Số liệu thực tế (1:00)
 
+**Người nói: Người 2**
+
 Metastable không hiếm. Một nghiên cứu năm 2022 tại OSDI xem xét 22 sự cố từ 11 tổ chức. Họ cũng ghi nhận ít nhất 4 trong 15 outage lớn của AWS trong một thập kỷ qua thuộc loại này.
 
 Theo slide của tác giả, khoảng 45% trigger là lỗi của kỹ sư, như config sai hay deploy lỗi, và khoảng 35% là load spike. Với sustaining effect, hơn một nửa là tải tăng do retry. (kiểm tra: ba tỷ lệ này lấy từ slide của tác giả, cần đối chiếu bảng trong paper. Slide ghi 21 sự cố còn paper ghi 22.) Nếu chưa kiểm tra, hãy nói "khoảng một nửa" và nói rõ nguồn.
@@ -197,6 +249,8 @@ Theo slide của tác giả, khoảng 45% trigger là lỗi của kỹ sư, như
 Điểm đáng rút ra: trigger đa dạng, nhưng cơ chế duy trì thì lặp lại, và retry nằm đầu bảng. Nên đầu tư phòng thủ vào sustaining effect có lợi hơn đoán trước mọi trigger.
 
 ## 15. Retry storm bằng con số (2:30)
+
+**Người nói: Người 2**
 
 [Đi chậm, từng bước.] Hệ thống chịu được 100 request mỗi giây. Tải bình thường 80, ổn, còn dư 20%. Một trigger: database chậm vài giây, request bắt đầu timeout. Client retry, nên tải thực tế thành 80 request mới cộng 80 retry, 160 request mỗi giây. Vượt capacity.
 
@@ -212,6 +266,8 @@ Lưu ý: số liệu ở đây là giả định để minh họa.
 
 ## 16. Vẽ loop trước khi chữa (1:30)
 
+**Người nói: Người 2**
+
 [Mời khán phòng tự điền mũi tên trước khi lộ đáp án.] Mọi thứ vừa kể có thể vẽ thành hai loại vòng lặp. Cách vẽ: ghi các biến lên giấy, rồi nối bằng mũi tên, ghi chiều tác động. Mình gọi là causal loop diagram.
 
 Loop R, reinforcing, tự khuếch đại: latency tăng thì timeout tăng, timeout tăng thì retry tăng, retry tăng thì load tăng, và load tăng lại làm latency tăng tiếp. Quay một vòng thì mọi thứ tệ hơn một chút. Đó là vòng của WorkOS, của Facebook, của AWS ở trên.
@@ -223,6 +279,8 @@ Metastable xảy ra khi R thắng B. Vì vậy chữa bệnh nghĩa là thêm m�
 Mẹo thực tế: lần sau xử lý sự cố, trước khi hỏi "ai làm hỏng", hãy lấy giấy vẽ loop. Chỉ cần ba bốn biến là thấy ngay mắt xích nào dễ cắt nhất.
 
 ## 17. Phá loop (3:00)
+
+**Người nói: Người 2**
 
 Ba nguyên tắc. Một, giảm tải khi lỗi: load shedding, retry budget, hàng đợi có giới hạn. Hai, giới hạn mọi thứ: retry, queue, concurrency, connection. Ba, jitter mọi thứ: backoff, TTL, reconnect.
 
@@ -238,7 +296,13 @@ Một cảnh báo: mỗi công cụ là một balancing loop mới, và tune sai
 
 Và nói thẳng về giới hạn: các tác giả gốc thừa nhận chưa có cách có hệ thống để xây hệ thống chống mọi metastable failure chưa biết. Có hướng đi, ví dụ Amazon đề xuất dùng performance model để dự đoán điều kiện vulnerable, nhưng đó vẫn là vấn đề mở. Một nghiên cứu khác, SREcon 2025, còn chỉ ra chính hành động recovery cũng có thể gây ra sự cố lớn hơn. AWS 2015 là một ví dụ: họ không thể thêm capacity vì dịch vụ quá tải không xử lý nổi request quản trị.
 
+[Bàn giao lại cho Người 1.] Mình trả lại cho Người 1 để quay về câu hỏi đầu buổi.
+
 ## 18. Bốn điều mang về (1:00)
+
+**Người nói: Người 1**
+
+[Nhận lại từ Người 2.] Cảm ơn bạn. Mình gom lại thành bốn điều.
 
 Một, hỏi "cái gì đang duy trì sự cố", đừng chỉ hỏi "cái gì gây ra nó". Trigger thì mỗi lần một khác, còn cơ chế duy trì thì lặp lại.
 
@@ -251,6 +315,8 @@ Bốn, recovery cũng cần được thiết kế, test và có giới hạn. N�
 Quay lại câu hỏi đầu buổi: cái giữ WorkOS ở trạng thái chết là một vòng lặp tự duy trì, không phải một lỗi. Và đó cũng là câu trả lời cho Facebook năm 2010 và AWS năm 2015.
 
 ## 19. Cầu sang Session B (1:00)
+
+**Người nói: Người 1**
 
 Mình kết bằng một câu hỏi, và cũng là câu mở đầu của Session B: retry policy này do ai viết, và KPI nào ép họ? Mỗi giá trị retry, mỗi timeout, mỗi mức headroom đều là kết quả của một quyết định, và các quyết định đó nằm trong một tổ chức có áp lực, có deadline, có người được thưởng vì ship nhanh và không ai được thưởng vì để dư capacity.
 

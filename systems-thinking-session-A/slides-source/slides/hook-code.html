@@ -19,5 +19,5 @@
 </div>
 </div>
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: WorkOS, Service disruption on July 16, 2026 (nested transaction do bug của thư viện ORM)</p>
-<aside>Khoảng 3 phút. Giải thích cơ chế hold-and-wait bằng đoạn code này. Nhấn mạnh: từng hàm đều hợp lý, review không thấy lỗi, tải thấp chạy tốt. Chỉ khi tải cao và đồng bộ thì 10 request cùng giữ 1 connection và đợi cái thứ hai. Đây là code minh họa, nguyên nhân thật theo WorkOS là bug ORM khiến nested transaction xin thêm connection. Đừng nói họ viết code tệ.</aside>
+<aside>[Người 1 nói] Khoảng 3 phút. Giải thích cơ chế hold-and-wait bằng đoạn code này. Nhấn mạnh: từng hàm đều hợp lý, review không thấy lỗi, tải thấp chạy tốt. Chỉ khi tải cao và đồng bộ thì 10 request cùng giữ 1 connection và đợi cái thứ hai. Đây là code minh họa, nguyên nhân thật theo WorkOS là bug ORM khiến nested transaction xin thêm connection. Đừng nói họ viết code tệ.</aside>
 </section>

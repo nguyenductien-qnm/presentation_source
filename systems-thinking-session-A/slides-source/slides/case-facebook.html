@@ -33,5 +33,5 @@
 </div>
 </div>
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: Facebook Engineering, More Details on Today's Outage, 23/9/2010</p>
-<aside>Case kinh điển, gần với cache stampede. Kể theo thứ tự: hệ thống tự kiểm tra config, một giá trị trong kho chính bị coi là sai, mọi client cùng hỏi một cụm database, hàng trăm nghìn query mỗi giây. Client coi lỗi database là giá trị không hợp lệ và xóa key cache, nên càng lỗi càng bị hỏi. Chính Facebook mô tả đây là feedback loop không cho database hồi phục. Họ phải chặn toàn bộ traffic tới cụm rồi cho người dùng vào lại từ từ. Nhấn: thứ làm hại là một cơ chế tự chữa. Bài gốc chỉ nói hàng trăm nghìn query mỗi giây, không nêu con số chính xác.</aside>
+<aside>[Người 2 nói] Case kinh điển, gần với cache stampede. Kể theo thứ tự: hệ thống tự kiểm tra config, một giá trị trong kho chính bị coi là sai, mọi client cùng hỏi một cụm database, hàng trăm nghìn query mỗi giây. Client coi lỗi database là giá trị không hợp lệ và xóa key cache, nên càng lỗi càng bị hỏi. Chính Facebook mô tả đây là feedback loop không cho database hồi phục. Họ phải chặn toàn bộ traffic tới cụm rồi cho người dùng vào lại từ từ. Nhấn: thứ làm hại là một cơ chế tự chữa. Bài gốc chỉ nói hàng trăm nghìn query mỗi giây, không nêu con số chính xác.</aside>
 </section>

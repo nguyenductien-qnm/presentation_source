@@ -38,5 +38,5 @@
       <p style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:32px; line-height:1.3; color:#f1eee6"><span style="color:#4fc1b5"><b>Phá loop:</b></span> backoff + jitter, concurrency limit, log không chặn luồng chính</p>
     </div>
   </div>
-  <aside>Họ hàng 3. Cassandra và MongoDB/CockroachDB là guide của vendor Netdata, không phải postmortem; nói rõ điều này. Bluesky 4/2026 là postmortem thật: thiếu concurrency limit ở RPC handler gây cạn port, log nghẽn và AppView crash lặp; cam kết khắc phục gồm concurrency limit bắt buộc cho mọi RPC handler và đưa log lỗi khối lượng lớn ra khỏi lời gọi chặn. Nên đọc bản gốc của Bluesky trước khi trình bày vì slide dựa trên bản tóm tắt.</aside>
+  <aside>[Người 2 nói] Họ hàng 3. Cassandra và MongoDB/CockroachDB là guide của vendor Netdata, không phải postmortem; nói rõ điều này. Bluesky 4/2026 là postmortem thật: thiếu concurrency limit ở RPC handler gây cạn port, log nghẽn và AppView crash lặp; cam kết khắc phục gồm concurrency limit bắt buộc cho mọi RPC handler và đưa log lỗi khối lượng lớn ra khỏi lời gọi chặn. Nên đọc bản gốc của Bluesky trước khi trình bày vì slide dựa trên bản tóm tắt.</aside>
 </section>

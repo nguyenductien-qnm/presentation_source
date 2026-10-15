@@ -33,5 +33,5 @@
 </div>
 </div>
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: Netdata ProxySQL guide; Design Gurus; StrongDM 1/6/2024 (reconnect storm cùng cơ chế)</p>
-<aside>Họ hàng 1. Mẹo nhận diện: nhìn đồ thị tải, nếu có đỉnh đều đặn theo chu kỳ TTL thì nghi stampede. Case thật gần nhất: StrongDM 1/6/2024, sau khi nâng cấp DB, khách hàng reconnect ồ ạt gây thundering herd; rollback xong dịch vụ vẫn chậm một lúc. Đây là reconnect storm chứ không phải cache expiry cổ điển, nhưng cơ chế như nhau. Lưu ý trung thực: tôi chưa tìm được postmortem cache stampede nổi tiếng của công ty lớn.</aside>
+<aside>[Người 2 nói] Họ hàng 1. Mẹo nhận diện: nhìn đồ thị tải, nếu có đỉnh đều đặn theo chu kỳ TTL thì nghi stampede. Case thật gần nhất: StrongDM 1/6/2024, sau khi nâng cấp DB, khách hàng reconnect ồ ạt gây thundering herd; rollback xong dịch vụ vẫn chậm một lúc. Đây là reconnect storm chứ không phải cache expiry cổ điển, nhưng cơ chế như nhau. Lưu ý trung thực: tôi chưa tìm được postmortem cache stampede nổi tiếng của công ty lớn.</aside>
 </section>

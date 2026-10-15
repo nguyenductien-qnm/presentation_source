@@ -27,5 +27,5 @@
 </div>
 </div>
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: WorkOS; Val Town; Gorgias (postmortem công khai). Mục cuối rút ra từ case WorkOS.</p>
-<aside>Họ hàng 2. WorkOS là case rõ nhất: hầu hết connection bị giữ bởi request đang chờ connection thứ hai nên gần như không việc nào xong; borrow timeout quá dài kéo dài tình trạng. Val Town: không có query timeout. Gorgias: dù đã có pool và proxy, một edge case timeout vẫn gây lockup. Mục "không giữ connection khi chờ connection khác" là bài học tôi rút ra từ case WorkOS, không phải kết luận chính thức của họ.</aside>
+<aside>[Người 2 nói] Họ hàng 2. WorkOS là case rõ nhất: hầu hết connection bị giữ bởi request đang chờ connection thứ hai nên gần như không việc nào xong; borrow timeout quá dài kéo dài tình trạng. Val Town: không có query timeout. Gorgias: dù đã có pool và proxy, một edge case timeout vẫn gây lockup. Mục "không giữ connection khi chờ connection khác" là bài học tôi rút ra từ case WorkOS, không phải kết luận chính thức của họ.</aside>
 </section>

@@ -1,0 +1,32 @@
+<section id="meta-numbers" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">04 · Metastable · Ngoài đời thật</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Metastable không hiếm</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#1F6F68">22</p>
+<p style="font-size:32px;line-height:1.3;color:#4A5260">failure metastable từ 11 tổ chức (OSDI 2022)</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#1F6F68">4/15</p>
+<p style="font-size:32px;line-height:1.3;color:#4A5260">outage lớn của AWS thập kỷ qua, ít nhất, là metastable</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:16px;background:#14181F;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#E8743B">&gt;50%</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">sustaining effect là tải tăng do retry (theo slide của tác giả)</p>
+</div>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #2F9E94;border-radius:16px;padding:24px 32px">
+<p style="font-size:24px;line-height:1.4;color:#4A5260"><b style="color:#1B2029">Khoảng 45% trigger</b> là lỗi của kỹ sư: config sai, deploy lỗi, bug tiềm ẩn</p>
+</div>
+<div style="flex:1;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #2F9E94;border-radius:16px;padding:24px 32px">
+<p style="font-size:24px;line-height:1.4;color:#4A5260"><b style="color:#1B2029">Khoảng 35% trigger</b> là load spike. Nhiều case có nhiều trigger cùng lúc</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: Metastable Failures in the Wild (OSDI 2022). Tỷ lệ phần trăm lấy từ slide tác giả, cần đối chiếu paper.</p>
+<aside>Số 22 và 11 tổ chức, cùng 4 trên 15 outage lớn của AWS, nằm trong abstract paper OSDI 2022. Các tỷ lệ 50%, 45%, 35% lấy từ slide của tác giả (slide nói hơn 50% cho retry). Có một chi tiết lệch: slide nói nghiên cứu 600 báo cáo và 21 failure, còn paper nói 22. Trước khi trình bày, mở bảng trong paper để xác nhận con số bạn đưa ra.</aside>
+</section>

@@ -1,0 +1,24 @@
+<section id="hook" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">Mở đầu · Một incident thật</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Không crash, nhưng không ai được phục vụ</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:3;display:flex;flex-direction:column;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">WorkOS · 16/7/2026</p>
+<ul style="font-size:32px;line-height:1.4;color:#1B2029">
+<li>Bug ORM: nested transaction xin connection thứ hai khi connection đầu còn mở</li>
+<li>Phần lớn connection bị giữ bởi request đang chờ một connection thứ hai</li>
+<li>Gần như không việc nào hoàn thành</li>
+<li>Request timeout bị retry, tạo ra request storm</li>
+<li>Borrow timeout quá dài làm tình trạng cạn connection kéo dài</li>
+</ul>
+</div>
+<div style="flex:2;display:flex;flex-direction:column;justify-content:space-between;gap:24px;background:#14181F;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">Câu hỏi</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2;color:#F1EEE6">Hệ thống không chết hẳn. Vậy cái gì đang giữ nó ở trạng thái chết?</h3>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: WorkOS, Service disruption on July 16, 2026</p>
+<aside>Kể incident WorkOS ngắn gọn. Nêu bug ORM ở dòng đầu nhưng chưa giải thích cơ chế, slide kế tiếp sẽ làm việc đó. Dừng ở câu hỏi bên phải và để audience đoán 20-30 giây. Quay lại câu trả lời ở cuối buổi: một vòng lặp tự duy trì, không phải một lỗi.</aside>
+</section>

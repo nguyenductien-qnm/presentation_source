@@ -1,0 +1,39 @@
+<section id="delay-hpa" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">02 · Delay · Ví dụ kỹ thuật</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Kubernetes HPA flapping</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:24px 32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;color:#1F6F68">01</p>
+<p style="font-size:32px;line-height:1.3">Metric vượt ngưỡng, HPA scale up</p>
+</div>
+<div style="display:flex;align-items:center;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:24px 32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;color:#1F6F68">02</p>
+<p style="font-size:32px;line-height:1.3">Tải mỗi pod giảm, kích hoạt scale down</p>
+</div>
+<div style="display:flex;align-items:center;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:24px 32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;color:#1F6F68">03</p>
+<p style="font-size:32px;line-height:1.3">Capacity giảm, tải tăng lại</p>
+</div>
+<div style="display:flex;align-items:center;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #E8743B;border-radius:16px;padding:24px 32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;color:#B4501D">04</p>
+<p style="font-size:32px;line-height:1.3">Lặp lại trong vài phút</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:24px;background:#14181F;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">HPA behavior</p>
+<div style="display:flex;flex-direction:column;gap:6px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#F1EEE6">behavior:</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#F1EEE6;padding:0 0 0 32px">scaleDown:</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#4FC1B5;padding:0 0 0 64px">stabilizationWindowSeconds: 300</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#F1EEE6;padding:0 0 0 32px">scaleUp:</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#4FC1B5;padding:0 0 0 64px">stabilizationWindowSeconds: 0</p>
+</div>
+<p style="font-size:32px;line-height:1.35;color:#B8C0CC">Cửa sổ ổn định là damping: HPA không scale xuống dưới mức khuyến nghị cao nhất trong cửa sổ.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: KEP-853 (Kubernetes); OneUptime, HPA stabilizationWindowSeconds. Giá trị là mặc định.</p>
+<aside>Đây là phiên bản kỹ thuật của đại lý xe. HPA là controller rời rạc với sync period và delay thu metric. Mặc định scale-down có cửa sổ 300 giây, scale-up là 0 giây: scale up nhanh, scale down thận trọng. Có thể vẽ thermostat bật tắt trễ trên bảng. Nhấn mạnh: damping quá mức làm hệ thống chậm, nên tune là cân bằng giữa tốc độ phản ứng và ổn định.</aside>
+</section>

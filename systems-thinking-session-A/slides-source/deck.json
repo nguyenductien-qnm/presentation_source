@@ -1,0 +1,32 @@
+{
+  "v": 4,
+  "createdOnFiles": { "v": 1, "at": "2026-10-13T09:00:00Z" },
+  "lists": "css",
+  "title": "Lỗi hết rồi, sao hệ thống vẫn chết?",
+  "order": [
+    "cover", "hook", "hook-code", "roadmap",
+    "queue-little", "queue-curve", "queue-lesson",
+    "delay-open", "delay-dealer", "delay-hpa",
+    "catalog-intro", "catalog-cache", "case-facebook", "catalog-pool", "catalog-gc",
+    "meta-states", "case-aws", "meta-numbers", "meta-example", "meta-cld", "break-loop",
+    "takeaways", "bridge", "sources"
+  ],
+  "sections": {
+    "intro": { "description": "Mở đầu bằng một incident thật và lộ trình bốn lớp.", "start": "cover" },
+    "queue": { "description": "Little's Law và đường cong hockey stick: gần đầy là mong manh.", "start": "queue-little" },
+    "delay": { "description": "Delay trong feedback loop gây dao động, ví dụ đại lý xe và HPA.", "start": "delay-open" },
+    "catalog": { "description": "Cache stampede, connection pool và GC death spiral cùng một khung.", "start": "catalog-intro" },
+    "meta": { "description": "Metastable failure: loop tự duy trì, vẽ loop và cách phá loop.", "start": "meta-states" },
+    "close": { "description": "Bài học chốt và cầu sang Session B.", "start": "takeaways" }
+  },
+  "faces": {
+    "ibm-plex-sans": {
+      "family": "IBM Plex Sans",
+      "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    },
+    "jetbrains-mono": {
+      "family": "JetBrains Mono",
+      "href": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+    }
+  }
+}

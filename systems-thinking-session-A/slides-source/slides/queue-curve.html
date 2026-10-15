@@ -1,0 +1,44 @@
+<section id="queue-curve" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">01 · Queue</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Đường cong hockey stick</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="width:896px;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:32px">
+<p style="font-size:24px;color:#4A5260">Số request trong hệ thống (L) theo mức sử dụng (ρ)</p>
+<svg aria-label="Đường cong L = ρ/(1-ρ): gần như phẳng đến khoảng 70% tải, rồi vọt lên mạnh ở 90% và 95%" viewBox="0 0 800 400" width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+<line x1="40" y1="360" x2="760" y2="360" stroke="#5A6270" stroke-width="2"/>
+<line x1="40" y1="20" x2="40" y2="360" stroke="#5A6270" stroke-width="2"/>
+<polyline fill="none" stroke="#E8743B" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" points="40,360 112,358.1 184,355.8 256,352.7 328,348.7 400,343 472,334.5 544,320.3 616,292 652,263.7 688,207 709.6,134.1 724,37"/>
+<line x1="544" y1="320" x2="544" y2="360" stroke="#2F9E94" stroke-width="3" stroke-dasharray="6 6"/>
+<line x1="688" y1="207" x2="688" y2="360" stroke="#E8743B" stroke-width="3" stroke-dasharray="6 6"/>
+<line x1="724" y1="37" x2="724" y2="360" stroke="#E8743B" stroke-width="3" stroke-dasharray="6 6"/>
+<circle cx="544" cy="320.3" r="11" fill="#2F9E94"/>
+<circle cx="688" cy="207" r="11" fill="#E8743B"/>
+<circle cx="724" cy="37" r="11" fill="#E8743B"/>
+</svg>
+<div style="display:flex;justify-content:space-between">
+<p style="font-size:24px;color:#5A6270">0%</p>
+<p style="font-size:24px;color:#1F6F68">70%</p>
+<p style="font-size:24px;color:#B4501D">90%</p>
+<p style="font-size:24px;color:#B4501D">95%</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #2F9E94;border-radius:16px;padding:32px">
+<p style="font-size:64px;font-weight:600;line-height:1.1;color:#1F6F68">L ≈ 2,3</p>
+<p style="font-size:32px;line-height:1.3;color:#4A5260">ở 70% tải: vẫn ổn</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #E8743B;border-radius:16px;padding:32px">
+<p style="font-size:64px;font-weight:600;line-height:1.1;color:#B4501D">L = 9</p>
+<p style="font-size:32px;line-height:1.3;color:#4A5260">ở 90% tải: hàng đợi gấp 4 lần</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#14181F;border-radius:16px;padding:32px">
+<p style="font-size:64px;font-weight:600;line-height:1.1;color:#E8743B">L = 19</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">ở 95% tải: sắp nổ</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Mô hình M/M/1: hình dạng đường cong đúng, con số chỉ minh họa. Nguồn: SREcon24, Queue Nonlinearity</p>
+<aside>Đây là slide quan trọng nhất phần Queue. Công thức: L = ρ/(1-ρ). 70% tải được L khoảng 2,3; 90% tải được 9; 95% tải được 19. Nói rõ M/M/1 giả định arrival Poisson và service time mũ, traffic thật bursty hơn nên điểm gãy thường đến sớm hơn. Mời audience đoán: hệ thống của họ hiện đang ở đâu trên đường cong?</aside>
+</section>

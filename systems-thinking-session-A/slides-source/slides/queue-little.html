@@ -1,0 +1,26 @@
+<section id="queue-little" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">01 · Queue</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Little's Law: hệ thống nào cũng tuân theo</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:5;display:flex;flex-direction:column;justify-content:space-between;gap:24px;background:#14181F;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.1;color:#E8743B">L = λW</p>
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6"><b>L</b>: số request đang ở trong hệ thống</p>
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6"><b>λ</b>: tốc độ request đến</p>
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6"><b>W</b>: thời gian trung bình mỗi request ở lại</p>
+</div>
+</div>
+<div style="flex:6;display:flex;flex-direction:column;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">Dùng khi incident</p>
+<ul style="font-size:32px;line-height:1.4;color:#1B2029">
+<li>Queue depth và request rate dễ đọc hơn latency percentile, nên suy ra W từ hai số đó</li>
+<li>Đúng cho mọi hệ thống ổn định, không cần giả định về phân phối hay scheduling</li>
+<li>Chỉ nói về trung bình. Tail latency phải đo riêng</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: Queues and You (SREcon24); Little's Law in production (dev.to)</p>
+<aside>Cho ví dụ nhanh: 200 req/s đến, mỗi request ở lại 0,5 giây thì có trung bình 100 request đang trong hệ thống. Khi incident, đọc queue depth chia request rate để ra W mà không cần dashboard latency. Cảnh báo: chỉ là trung bình.</aside>
+</section>

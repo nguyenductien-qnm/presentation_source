@@ -1,0 +1,42 @@
+<section id="catalog-gc" data-transition="fade" style="background:#f4f1ea">
+  <p id="e1-1h5q90h" style="position:absolute; bottom:64px; left:128px; width:1664px; font-family:'IBM Plex Sans', Arial, sans-serif; font-size:24px; color:#5a6270">Nguồn: Netdata (vendor guide, không phải postmortem); Bluesky qua ilert, nên đọc bản gốc</p>
+  <div id="peb1d631a4bb4r0-9d2525b1" style="position:absolute; top:128px; left:128px; width:1664px; height:120px; display:flex; flex-direction:column; gap:16px">
+    <p style="font-family:'JetBrains Mono', 'Courier New', monospace; font-size:24px; letter-spacing:2px; text-transform:uppercase; color:#b4501d">03 · Catalog · Họ hàng 3</p>
+    <h2 style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:64px; font-weight:600; line-height:1.1; color:#1b2029">GC death spiral và reconnect storm</h2>
+  </div>
+  <div id="peb1d631a4bb4r1-9d2525b1" style="position:absolute; top:304px; left:128px; width:1664px; height:616px; display:flex; flex-direction:column; gap:24px">
+    <div style="display:flex; flex-direction:row; gap:32px">
+      <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:36px; background:#fbfaf6; border:1px solid #ddd8cb; border-radius:16px">
+        <p style="font-family:'JetBrains Mono', 'Courier New', monospace; font-size:24px; color:#1f6f68">GC death spiral</p>
+        <h3 style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:40px; font-weight:600; line-height:1.2; color:#1b2029">Cassandra</h3>
+        <ul style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:32px; line-height:1.35; color:#4a5260">
+          <li>Heap bị ép, pause dài</li>
+          <li>Node bị đánh dấu DOWN</li>
+          <li>Retry thêm áp lực, pause dày dần</li>
+        </ul>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:36px; background:#fbfaf6; border:1px solid #ddd8cb; border-radius:16px">
+        <p style="font-family:'JetBrains Mono', 'Courier New', monospace; font-size:24px; color:#1f6f68">Thiếu concurrency limit</p>
+        <h3 style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:40px; font-weight:600; line-height:1.2; color:#1b2029">Bluesky, 4/2026</h3>
+        <ul style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:32px; line-height:1.35; color:#4a5260">
+          <li>Handler RPC không giới hạn concurrency</li>
+          <li>Cạn port, log nghẽn</li>
+          <li>AppView crash lặp</li>
+        </ul>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:36px; background:#fbfaf6; border:1px solid #ddd8cb; border-radius:16px">
+        <p style="font-family:'JetBrains Mono', 'Courier New', monospace; font-size:24px; color:#b4501d">Reconnect storm</p>
+        <h3 style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:40px; font-weight:600; line-height:1.2; color:#1b2029">MongoDB, CockroachDB</h3>
+        <ul style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:32px; line-height:1.35; color:#4a5260">
+          <li>Election hoặc failover</li>
+          <li>Mọi driver reconnect cùng lúc</li>
+          <li>Retry không jitter giữ client đồng bộ</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; padding:24px 36px; background:#14181f; border-radius:16px">
+      <p style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:32px; line-height:1.3; color:#f1eee6"><span style="color:#4fc1b5"><b>Phá loop:</b></span> backoff + jitter, concurrency limit, log không chặn luồng chính</p>
+    </div>
+  </div>
+  <aside>Họ hàng 3. Cassandra và MongoDB/CockroachDB là guide của vendor Netdata, không phải postmortem; nói rõ điều này. Bluesky 4/2026 là postmortem thật: thiếu concurrency limit ở RPC handler gây cạn port, log nghẽn và AppView crash lặp; cam kết khắc phục gồm concurrency limit bắt buộc cho mọi RPC handler và đưa log lỗi khối lượng lớn ra khỏi lời gọi chặn. Nên đọc bản gốc của Bluesky trước khi trình bày vì slide dựa trên bản tóm tắt.</aside>
+</section>

@@ -1,0 +1,33 @@
+<section id="meta-example" data-transition="fade" style="background:#14181F;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">04 · Metastable · Ví dụ</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Retry storm bằng con số</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:32px">
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Bước 1</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#F1EEE6">80</p>
+<p style="font-size:32px;line-height:1.3;color:#B8C0CC">req/s bình thường. Capacity 100: vẫn ổn</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Bước 2</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#F1EEE6">5s</p>
+<p style="font-size:32px;line-height:1.3;color:#B8C0CC">DB chậm, request timeout. Đây là trigger</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Bước 3</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#F1EEE6">160</p>
+<p style="font-size:32px;line-height:1.3;color:#B8C0CC">req/s: 80 mới cộng 80 retry, vượt capacity</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-left:8px solid #E8743B;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#E8743B">Bước 4</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#E8743B">≈ 0</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">goodput. Trigger đã hết nhưng loop vẫn quay</p>
+</div>
+</div>
+<p style="font-size:40px;line-height:1.3;color:#F1EEE6">Restart cũng không giúp: client vẫn đang retry, tải ập vào ngay.</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#9AA4B2">Ví dụ minh họa với số giả định, không phải số đo thực.</p>
+<aside>Đi chậm qua bốn bước. Điểm mấu chốt ở bước 4: DB đã hết chậm từ lâu nhưng 160 req/s vượt capacity 100, và phần lớn request là retry của request mà client đã bỏ, nên server bận làm việc vô ích (goodput gần 0). Số liệu là giả định để minh họa. Hình ảnh so sánh: xe kẹt cứng ngã tư dù xe chết máy đã được kéo đi.</aside>
+</section>

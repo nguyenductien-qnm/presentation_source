@@ -1,0 +1,37 @@
+<section id="catalog-intro" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">03 · Catalog</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Họ hàng của retry storm dùng chung một khung</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:32px">
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">1 · Trigger</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Sự kiện tạm thời</h3>
+<p style="font-size:32px;line-height:1.35;color:#4A5260">TTL hết hạn, deploy, restart, spike</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">2 · Khuếch đại</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Lỗi sinh thêm việc</h3>
+<p style="font-size:32px;line-height:1.35;color:#4A5260">Miss, retry, reconnect</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #E8743B;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B4501D">3 · Loop duy trì</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Việc thêm làm chậm thêm</h3>
+<p style="font-size:32px;line-height:1.35;color:#4A5260">Chậm sinh lỗi, lỗi sinh việc</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#14181F;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">4 · Phá loop</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2;color:#F1EEE6">Chặn khuếch đại</h3>
+<p style="font-size:32px;line-height:1.35;color:#B8C0CC">Jitter, giới hạn, shed load</p>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:24px">
+<p style="font-size:32px;font-weight:600;color:#1B2029">Ba họ hàng:</p>
+<p style="font-size:32px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:999px;padding:12px 28px">Cache stampede</p>
+<p style="font-size:32px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:999px;padding:12px 28px">Connection pool</p>
+<p style="font-size:32px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:999px;padding:12px 28px">GC và reconnect storm</p>
+</div>
+</div>
+<aside>Giới thiệu khung 4 bước, rồi mỗi họ hàng chỉ cần điền 4 ô. Đây là lúc audience nhận ra các sự cố khác nhau thật ra cùng một cấu trúc. Mỗi họ hàng dành khoảng 2 đến 3 phút trong các slide sau.</aside>
+</section>

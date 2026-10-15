@@ -1,0 +1,31 @@
+<section id="catalog-pool" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">03 · Catalog · Họ hàng 2</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Connection pool: nghẹt từ bên trong</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:3;display:flex;flex-direction:column;gap:16px">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #E8743B;border-radius:16px;padding:28px 36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B4501D">WorkOS · 16/7/2026</p>
+<p style="font-size:32px;line-height:1.3">Request giữ một connection để chờ connection thứ hai, retry tạo request storm</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:28px 36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">Val Town</p>
+<p style="font-size:32px;line-height:1.3">Query deadlock chiếm slot, pool không có query timeout</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:28px 36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">Gorgias</p>
+<p style="font-size:32px;line-height:1.3">Edge case timeout gây lockup, dọn backlog mất thêm khoảng 1 giờ</p>
+</div>
+</div>
+<div style="flex:2;display:flex;flex-direction:column;gap:20px;background:#14181F;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Cách phá</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">Borrow timeout ngắn</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">Query timeout</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">Giới hạn concurrency</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">Không giữ connection khi chờ connection khác</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: WorkOS; Val Town; Gorgias (postmortem công khai). Mục cuối rút ra từ case WorkOS.</p>
+<aside>Họ hàng 2. WorkOS là case rõ nhất: hầu hết connection bị giữ bởi request đang chờ connection thứ hai nên gần như không việc nào xong; borrow timeout quá dài kéo dài tình trạng. Val Town: không có query timeout. Gorgias: dù đã có pool và proxy, một edge case timeout vẫn gây lockup. Mục "không giữ connection khi chờ connection khác" là bài học tôi rút ra từ case WorkOS, không phải kết luận chính thức của họ.</aside>
+</section>

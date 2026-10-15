@@ -1,0 +1,30 @@
+<section id="break-loop" data-transition="fade" style="background:#14181F;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">Phá loop</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Đừng để tải tự tăng khi lỗi</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:32px">
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">1</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Giảm tải khi lỗi</h3>
+<p style="font-size:32px;line-height:1.35;color:#B8C0CC">Load shedding, retry budget, bounded queue</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">2</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Giới hạn mọi thứ</h3>
+<p style="font-size:32px;line-height:1.35;color:#B8C0CC">Retry, queue, concurrency, connection</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">3</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Jitter mọi thứ</h3>
+<p style="font-size:32px;line-height:1.35;color:#B8C0CC">Backoff, TTL, reconnect</p>
+</div>
+</div>
+<div style="background:#1F2630;border:1px solid #2E3744;border-left:8px solid #E8743B;border-radius:16px;padding:28px 36px">
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6"><b style="color:#E8743B">Cẩn thận:</b> mỗi công cụ là một balancing loop mới. Tune sai thì chính nó thành trigger, như circuit breaker cấu hình sai ở DoorDash cắt traffic giữa nhiều service không liên quan.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#9AA4B2">Nguồn: DoorDash Engineering; Metastability in Recovery (SREcon26)</p>
+<aside>Rút gọn nếu hết giờ. Ba nguyên tắc: giảm tải khi lỗi, giới hạn mọi thứ, jitter mọi thứ. Cảnh báo: công cụ phá loop cũng có thể thành trigger (DoorDash). Nhắc lại giới hạn: tác giả gốc thừa nhận chưa có cách có hệ thống để xây hệ thống chống mọi metastable failure chưa biết; Amazon (HotOS 2025) đề xuất dùng performance model để dự đoán điều kiện vulnerable. Recovery action cũng có thể gây metastable (SREcon 2025).</aside>
+</section>

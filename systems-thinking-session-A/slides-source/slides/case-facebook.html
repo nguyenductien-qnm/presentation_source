@@ -1,0 +1,37 @@
+<section id="case-facebook" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">03 · Catalog · Case thật</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Facebook 2010: hệ thống tự sửa làm hỏng thêm</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;gap:32px">
+<div style="flex:3;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B4501D">Vòng lặp · 23/9/2010 · khoảng 2,5 giờ</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#1F6F68">1</b> · Ai đó đổi một giá trị config trong kho chính</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#1F6F68">2</b> · Hệ thống kiểm tra coi giá trị đó là sai, mọi client chạy đi sửa bằng cách hỏi cụm database</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#1F6F68">3</b> · Database báo lỗi, client coi lỗi là giá trị sai, xóa key cache rồi hỏi lại</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#B4501D">4</b> · Hàng trăm nghìn query mỗi giây, database không hồi phục</p>
+</div>
+<div style="flex:2;display:flex;flex-direction:column;gap:20px;background:#14181F;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Cách họ phá loop</p>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Chặn mọi traffic tới cụm</p>
+<p style="font-size:24px;line-height:1.3;color:#B8C0CC">Tức là đưa cả site ngoại tuyến</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Cho người dùng vào lại từ từ</p>
+<p style="font-size:24px;line-height:1.3;color:#B8C0CC">Sau khi database hồi phục</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Tắt hệ thống tự sửa config</p>
+<p style="font-size:24px;line-height:1.3;color:#B8C0CC">Cơ chế được viết ra để tăng độ tin cậy</p>
+</div>
+</div>
+</div>
+<div style="background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #2F9E94;border-radius:16px;padding:24px 32px">
+<p style="font-size:24px;line-height:1.4;color:#4A5260"><b style="color:#1B2029">Trigger</b> là một lần đổi config. <b style="color:#1B2029">Thứ duy trì sự cố</b> là vòng lặp lỗi database sinh thêm query. Sửa config xong vẫn chưa hết.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: Facebook Engineering, More Details on Today's Outage, 23/9/2010</p>
+<aside>Case kinh điển, gần với cache stampede. Kể theo thứ tự: hệ thống tự kiểm tra config, một giá trị trong kho chính bị coi là sai, mọi client cùng hỏi một cụm database, hàng trăm nghìn query mỗi giây. Client coi lỗi database là giá trị không hợp lệ và xóa key cache, nên càng lỗi càng bị hỏi. Chính Facebook mô tả đây là feedback loop không cho database hồi phục. Họ phải chặn toàn bộ traffic tới cụm rồi cho người dùng vào lại từ từ. Nhấn: thứ làm hại là một cơ chế tự chữa. Bài gốc chỉ nói hàng trăm nghìn query mỗi giây, không nêu con số chính xác.</aside>
+</section>

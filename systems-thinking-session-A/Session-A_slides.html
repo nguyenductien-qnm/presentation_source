@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lỗi hết rồi, sao hệ thống vẫn chết? Session A (slide)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0E1116;color:#F1EEE6;font-family:'IBM Plex Sans',Arial,sans-serif;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100%}
+.main{flex:1;display:flex;min-height:0}
+.stagewrap{flex:1;display:flex;align-items:center;justify-content:center;min-width:0;position:relative;padding:16px}
+.stage{position:relative;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.5);border-radius:6px;background:#000}
+.slide{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;display:none}
+.slide.on{display:block}
+.slide section{box-sizing:border-box;position:relative;width:1920px;height:1080px;overflow:hidden}
+.slide p,.slide h1,.slide h2,.slide h3,.slide ul,.slide ol{margin:0}
+.slide ul,.slide ol{padding-left:44px}
+.slide li+li{margin-top:12px}
+.slide table{border-collapse:collapse;width:100%}
+.slide a{color:#1F6F68;text-decoration:underline}
+.slide b{font-weight:600}
+.bar{height:44px;display:flex;align-items:center;gap:16px;padding:0 20px;background:#14181F;border-top:1px solid #232A35;font-size:14px;color:#9AA4B2;flex:none}
+.bar .grow{flex:1}
+.bar button{background:#1F2630;color:#F1EEE6;border:1px solid #2E3744;border-radius:8px;padding:6px 14px;font:inherit;cursor:pointer}
+.bar button:hover{background:#2A3340}
+.prog{position:absolute;left:0;right:0;bottom:0;height:3px;background:#232A35}
+.prog i{display:block;height:100%;background:#E8743B;width:0}
+.script{width:min(36vw,560px);flex:none;background:#F4F1EA;color:#1B2029;overflow:auto;padding:28px 32px 48px;border-left:1px solid #DDD8CB;font-size:19px;line-height:1.6}
+.script .tag{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#B4501D;margin:0 0 6px}
+.script h2{font-size:24px;line-height:1.25;margin:0 0 4px;font-weight:600}
+.script .time{font-family:'JetBrains Mono',monospace;font-size:14px;color:#1F6F68;margin:0 0 18px}
+.script p{margin:0 0 14px}
+.script .dir{color:#B4501D;font-style:italic}
+.script .check{background:#FFE9A8;border-radius:4px;padding:0 4px}
+.script code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:#E8E2D2;border-radius:4px;padding:1px 5px}
+.script .none{color:#5A6270;font-style:italic}
+.doc{flex:1;overflow:auto;background:#F4F1EA;color:#1B2029;padding:48px 24px}
+.doc .in{max-width:860px;margin:0 auto;font-size:20px;line-height:1.6}
+.doc h2{font-size:36px;margin:0 0 8px;font-weight:600}
+.doc .q{font-weight:600;margin:22px 0 4px}
+.doc p{margin:0 0 10px}
+.doc ol{padding-left:28px}
+.doc li{margin:8px 0}
+.doc .tag{font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:#B4501D;margin:0 0 6px}
+.doc .box{background:#FBFAF6;border:1px solid #DDD8CB;border-radius:12px;padding:18px 22px;margin:14px 0}
+.doc .check{background:#FFE9A8;border-radius:4px;padding:0 4px}
+.doc code{font-family:'JetBrains Mono',monospace;background:#E8E2D2;border-radius:4px;padding:1px 5px}
+@media (max-width:900px){.main{flex-direction:column}.script{width:auto;height:42%;border-left:0;border-top:1px solid #DDD8CB}}
+</style></head><body><div class="app"><div class="main"><div class="stagewrap"><div class="stage"><div class="slide" id="s-cover"><section id="cover" data-transition="fade" style="background:#14181F;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between">
+<div style="position:absolute;left:1240px;top:260px;width:480px;height:480px;border:10px solid #E8743B;border-radius:50%;opacity:0.9"></div>
+<div style="position:absolute;left:1330px;top:350px;width:300px;height:300px;border:10px solid #2F9E94;border-radius:50%;opacity:0.9"></div>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">Systems thinking · Session A</p>
+<div style="display:flex;flex-direction:column;gap:32px">
+<h1 style="font-size:120px;font-weight:600;line-height:1.05;width:1000px">Lỗi hết rồi,<br>sao hệ thống<br>vẫn chết?</h1>
+<p style="font-size:40px;line-height:1.3;color:#B8C0CC;width:1000px">Queue, delay, retry và những vòng lặp giữ outage ở lại</p>
+</div>
+<p style="font-size:24px;color:#9AA4B2"></p>
+
+</section>
+</div><div class="slide" id="s-hook"><section id="hook" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">Mở đầu · Một incident thật</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Không crash, nhưng không ai được phục vụ</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:3;display:flex;flex-direction:column;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">WorkOS · 16/7/2026</p>
+<ul style="font-size:32px;line-height:1.4;color:#1B2029">
+<li>Bug ORM: nested transaction xin connection thứ hai khi connection đầu còn mở</li>
+<li>Phần lớn connection bị giữ bởi request đang chờ một connection thứ hai</li>
+<li>Gần như không việc nào hoàn thành</li>
+<li>Request timeout bị retry, tạo ra request storm</li>
+<li>Borrow timeout quá dài làm tình trạng cạn connection kéo dài</li>
+</ul>
+</div>
+<div style="flex:2;display:flex;flex-direction:column;justify-content:space-between;gap:24px;background:#14181F;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">Câu hỏi</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2;color:#F1EEE6">Hệ thống không chết hẳn. Vậy cái gì đang giữ nó ở trạng thái chết?</h3>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: WorkOS, Service disruption on July 16, 2026</p>
+
+</section>
+</div><div class="slide" id="s-hook-code"><section id="hook-code" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">Mở đầu · Cơ chế, code minh họa</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Giữ một connection, rồi xin thêm một cái nữa</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:3;display:flex;flex-direction:column">
+<div style="display:flex;flex-direction:column;gap:20px;background:#14181F;border-radius:16px;padding:32px 40px"><div style="display:flex;align-items:center;gap:12px"><div style="width:16px;height:16px;border-radius:50%;background:#FF5F57"></div><div style="width:16px;height:16px;border-radius:50%;background:#FEBC2E"></div><div style="width:16px;height:16px;border-radius:50%;background:#28C840"></div><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#9AA4B2;margin-left:16px">pseudocode · pool = 10 connection</p></div><div style="display:flex;flex-direction:column;background:#1E1E1E;border-radius:12px;padding:20px 8px"><div style="display:flex;flex-direction:row;align-items:baseline;border-left:6px solid transparent;padding:2px 16px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:22px;line-height:1.5;color:#858585;width:56px">1</p><div style="display:flex;flex-direction:row;align-items:baseline;padding-left:0px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#569CD6">def&nbsp;</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#DCDCAA">create_session</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">(</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#9CDCFE">user</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">):</p></div></div><div style="display:flex;flex-direction:row;align-items:baseline;border-left:6px solid transparent;padding:2px 16px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:22px;line-height:1.5;color:#858585;width:56px">2</p><div style="display:flex;flex-direction:row;align-items:baseline;padding-left:62px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#6A9955">#&nbsp;giữ&nbsp;connection&nbsp;#1</p></div></div><div style="display:flex;flex-direction:row;align-items:baseline;background:rgba(232,116,59,0.22);border-left:6px solid #E8743B;padding:2px 16px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:22px;line-height:1.5;color:#858585;width:56px">3</p><div style="display:flex;flex-direction:row;align-items:baseline;padding-left:62px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#C586C0">with&nbsp;</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#9CDCFE">db</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">.</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#DCDCAA">transaction</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">()&nbsp;</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#C586C0">as&nbsp;</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#9CDCFE">tx</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">:</p></div></div><div style="display:flex;flex-direction:row;align-items:baseline;border-left:6px solid transparent;padding:2px 16px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:22px;line-height:1.5;color:#858585;width:56px">4</p><div style="display:flex;flex-direction:row;align-items:baseline;padding-left:124px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#9CDCFE">tx</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">.</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#DCDCAA">insert</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">(</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#CE9178">&quot;events&quot;</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">,&nbsp;...)</p></div></div><div style="display:flex;flex-direction:row;align-items:baseline;border-left:6px solid transparent;padding:2px 16px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:22px;line-height:1.5;color:#858585;width:56px">5</p><div style="display:flex;flex-direction:row;align-items:baseline;padding-left:124px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#DCDCAA">record_analytics</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">(</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#9CDCFE">tx</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">,&nbsp;</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#9CDCFE">user</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">)</p></div></div><div style="display:flex;flex-direction:row;align-items:baseline;border-left:6px solid transparent;padding:2px 16px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:22px;line-height:1.5;color:#858585;width:56px">6</p><div style="display:flex;flex-direction:row;align-items:baseline;padding-left:0px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">&nbsp;</p></div></div><div style="display:flex;flex-direction:row;align-items:baseline;border-left:6px solid transparent;padding:2px 16px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:22px;line-height:1.5;color:#858585;width:56px">7</p><div style="display:flex;flex-direction:row;align-items:baseline;padding-left:0px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#569CD6">def&nbsp;</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#DCDCAA">record_analytics</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">(</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#9CDCFE">tx</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">,&nbsp;</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#9CDCFE">user</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">):</p></div></div><div style="display:flex;flex-direction:row;align-items:baseline;border-left:6px solid transparent;padding:2px 16px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:22px;line-height:1.5;color:#858585;width:56px">8</p><div style="display:flex;flex-direction:row;align-items:baseline;padding-left:62px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#6A9955">#&nbsp;bug&nbsp;ORM:&nbsp;xin&nbsp;thêm&nbsp;connection&nbsp;#2</p></div></div><div style="display:flex;flex-direction:row;align-items:baseline;background:rgba(255,90,75,0.24);border-left:6px solid #FF5A4B;padding:2px 16px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:22px;line-height:1.5;color:#858585;width:56px">9</p><div style="display:flex;flex-direction:row;align-items:baseline;padding-left:62px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#C586C0">with&nbsp;</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#9CDCFE">tx</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">.</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#DCDCAA">nested</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">()&nbsp;</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#C586C0">as&nbsp;</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#9CDCFE">inner</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">:</p></div></div><div style="display:flex;flex-direction:row;align-items:baseline;border-left:6px solid transparent;padding:2px 16px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:22px;line-height:1.5;color:#858585;width:56px">10</p><div style="display:flex;flex-direction:row;align-items:baseline;padding-left:124px"><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#9CDCFE">inner</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">.</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#DCDCAA">insert</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">(</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#CE9178">&quot;analytics&quot;</p><p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;line-height:1.5;color:#D4D4D4">,&nbsp;...)</p></div></div></div></div>
+</div>
+<div style="flex:2;display:flex;flex-direction:column;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">Điều gì xảy ra khi tải cao</p>
+<ul style="font-size:32px;line-height:1.4;color:#1B2029">
+<li>Tải thấp: mượn hai connection, trả lại, không ai thấy gì</li>
+<li>10 request cùng lúc: mỗi request giữ 1, pool hết chỗ trống</li>
+<li>Cả 10 đều đợi cái thứ hai. Không ai nhả cái đang giữ</li>
+<li>Chỉ timeout mới phá được, rồi retry xếp hàng lại</li>
+</ul>
+<p style="font-size:24px;line-height:1.4;color:#5A6270">Dev tưởng hai ghi dùng chung một connection. Đây là code minh họa, không phải code của WorkOS.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: WorkOS, Service disruption on July 16, 2026 (nested transaction do bug của thư viện ORM)</p>
+
+</section>
+</div><div class="slide" id="s-roadmap"><section id="roadmap" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">Lộ trình</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Bốn lớp, từ nền đến đỉnh</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">7-13 phút</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Queue</h3>
+<p style="font-size:32px;line-height:1.35;color:#4A5260">Vì sao gần đầy là mong manh</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">13-18 phút</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Delay</h3>
+<p style="font-size:32px;line-height:1.35;color:#4A5260">Vì sao phản ứng nhanh gây dao động</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">18-27 phút</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Catalog</h3>
+<p style="font-size:32px;line-height:1.35;color:#4A5260">Họ hàng của retry storm</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#14181F;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#E8743B">27-40 phút</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2;color:#F1EEE6">Metastable</h3>
+<p style="font-size:32px;line-height:1.35;color:#B8C0CC">Khi loop tự duy trì</p>
+</div>
+</div>
+
+</section>
+</div><div class="slide" id="s-queue-little"><section id="queue-little" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">01 · Queue</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Little's Law: hệ thống nào cũng tuân theo</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:5;display:flex;flex-direction:column;justify-content:space-between;gap:24px;background:#14181F;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.1;color:#E8743B">L = λW</p>
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6"><b>L</b>: số request đang ở trong hệ thống</p>
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6"><b>λ</b>: tốc độ request đến</p>
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6"><b>W</b>: thời gian trung bình mỗi request ở lại</p>
+</div>
+</div>
+<div style="flex:6;display:flex;flex-direction:column;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">Dùng khi incident</p>
+<ul style="font-size:32px;line-height:1.4;color:#1B2029">
+<li>Queue depth và request rate dễ đọc hơn latency percentile, nên suy ra W từ hai số đó</li>
+<li>Đúng cho mọi hệ thống ổn định, không cần giả định về phân phối hay scheduling</li>
+<li>Chỉ nói về trung bình. Tail latency phải đo riêng</li>
+</ul>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: Queues and You (SREcon24); Little's Law in production (dev.to)</p>
+
+</section>
+</div><div class="slide" id="s-queue-curve"><section id="queue-curve" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">01 · Queue</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Đường cong hockey stick</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="width:896px;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:32px">
+<p style="font-size:24px;color:#4A5260">Số request trong hệ thống (L) theo mức sử dụng (ρ)</p>
+<svg aria-label="Đường cong L = ρ/(1-ρ): gần như phẳng đến khoảng 70% tải, rồi vọt lên mạnh ở 90% và 95%" viewBox="0 0 800 400" width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+<line x1="40" y1="360" x2="760" y2="360" stroke="#5A6270" stroke-width="2"/>
+<line x1="40" y1="20" x2="40" y2="360" stroke="#5A6270" stroke-width="2"/>
+<polyline fill="none" stroke="#E8743B" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" points="40,360 112,358.1 184,355.8 256,352.7 328,348.7 400,343 472,334.5 544,320.3 616,292 652,263.7 688,207 709.6,134.1 724,37"/>
+<line x1="544" y1="320" x2="544" y2="360" stroke="#2F9E94" stroke-width="3" stroke-dasharray="6 6"/>
+<line x1="688" y1="207" x2="688" y2="360" stroke="#E8743B" stroke-width="3" stroke-dasharray="6 6"/>
+<line x1="724" y1="37" x2="724" y2="360" stroke="#E8743B" stroke-width="3" stroke-dasharray="6 6"/>
+<circle cx="544" cy="320.3" r="11" fill="#2F9E94"/>
+<circle cx="688" cy="207" r="11" fill="#E8743B"/>
+<circle cx="724" cy="37" r="11" fill="#E8743B"/>
+</svg>
+<div style="display:flex;justify-content:space-between">
+<p style="font-size:24px;color:#5A6270">0%</p>
+<p style="font-size:24px;color:#1F6F68">70%</p>
+<p style="font-size:24px;color:#B4501D">90%</p>
+<p style="font-size:24px;color:#B4501D">95%</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #2F9E94;border-radius:16px;padding:32px">
+<p style="font-size:64px;font-weight:600;line-height:1.1;color:#1F6F68">L ≈ 2,3</p>
+<p style="font-size:32px;line-height:1.3;color:#4A5260">ở 70% tải: vẫn ổn</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #E8743B;border-radius:16px;padding:32px">
+<p style="font-size:64px;font-weight:600;line-height:1.1;color:#B4501D">L = 9</p>
+<p style="font-size:32px;line-height:1.3;color:#4A5260">ở 90% tải: hàng đợi gấp 4 lần</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#14181F;border-radius:16px;padding:32px">
+<p style="font-size:64px;font-weight:600;line-height:1.1;color:#E8743B">L = 19</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">ở 95% tải: sắp nổ</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Mô hình M/M/1: hình dạng đường cong đúng, con số chỉ minh họa. Nguồn: SREcon24, Queue Nonlinearity</p>
+
+</section>
+</div><div class="slide" id="s-queue-lesson"><section id="queue-lesson" data-transition="fade" style="background:#14181F;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">Bài học 01</p>
+<div style="display:flex;flex-direction:column;gap:32px">
+<h1 style="font-size:120px;font-weight:600;line-height:1.05">Gần đầy là sắp nổ.</h1>
+<p style="font-size:40px;line-height:1.3;color:#B8C0CC;width:1300px">95% tải không có nghĩa là còn dư 5%. Hàng đợi tăng phi tuyến khi chạm ngưỡng.</p>
+</div>
+<div style="display:flex;gap:24px">
+<p style="font-size:32px;background:#1F2630;border:1px solid #2E3744;border-radius:999px;padding:16px 32px;color:#F1EEE6">Để dành headroom</p>
+<p style="font-size:32px;background:#1F2630;border:1px solid #2E3744;border-radius:999px;padding:16px 32px;color:#F1EEE6">Backpressure</p>
+<p style="font-size:32px;background:#1F2630;border:1px solid #2E3744;border-radius:999px;padding:16px 32px;color:#F1EEE6">Shed load trước ngưỡng</p>
+</div>
+
+</section>
+</div><div class="slide" id="s-delay-open"><section id="delay-open" data-transition="fade" style="background:#E8743B;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#14181F">02 · Delay</p>
+<div style="display:flex;flex-direction:column;gap:32px">
+<h1 style="font-size:120px;font-weight:600;line-height:1.05">Phản ứng nhanh hơn có thể tệ hơn</h1>
+<p style="font-size:40px;line-height:1.3;width:1300px">Delay trong feedback loop là nguyên nhân phổ biến của dao động và overshoot.</p>
+</div>
+<p style="font-size:24px;color:#14181F">Donella Meadows, Thinking in Systems</p>
+
+</section>
+</div><div class="slide" id="s-delay-dealer"><section id="delay-dealer" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">02 · Delay · Ví dụ đời thường</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Đại lý xe: dao động đến từ độ trễ</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:40px">
+<div style="display:flex;align-items:center;gap:16px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:28px">
+<h3 style="font-size:32px;font-weight:600;line-height:1.2">Bán chạy</h3>
+<p style="font-size:24px;line-height:1.35;color:#4A5260">Nhu cầu tăng</p>
+</div>
+<div style="width:56px;height:40px;background:#5A6270;clip-path:polygon(0 35%,60% 35%,60% 0,100% 50%,60% 100%,60% 65%,0 65%);flex:none"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:28px">
+<h3 style="font-size:32px;font-weight:600;line-height:1.2">Đặt thêm xe</h3>
+<p style="font-size:24px;line-height:1.35;color:#4A5260">Đại lý do dự, sợ trend không bền</p>
+</div>
+<div style="width:56px;height:40px;background:#5A6270;clip-path:polygon(0 35%,60% 35%,60% 0,100% 50%,60% 100%,60% 65%,0 65%);flex:none"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#14181F;border-radius:16px;padding:28px">
+<h3 style="font-size:32px;font-weight:600;line-height:1.2;color:#E8743B">Delay</h3>
+<p style="font-size:24px;line-height:1.35;color:#F1EEE6">Sản xuất và vận chuyển mất thời gian</p>
+</div>
+<div style="width:56px;height:40px;background:#5A6270;clip-path:polygon(0 35%,60% 35%,60% 0,100% 50%,60% 100%,60% 65%,0 65%);flex:none"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:28px">
+<h3 style="font-size:32px;font-weight:600;line-height:1.2">Xe về muộn</h3>
+<p style="font-size:24px;line-height:1.35;color:#4A5260">Nhu cầu đã đổi, tồn kho dư</p>
+</div>
+<div style="width:56px;height:40px;background:#5A6270;clip-path:polygon(0 35%,60% 35%,60% 0,100% 50%,60% 100%,60% 65%,0 65%);flex:none"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:28px">
+<h3 style="font-size:32px;font-weight:600;line-height:1.2">Cắt đơn quá tay</h3>
+<p style="font-size:24px;line-height:1.35;color:#4A5260">Rồi thiếu xe, quay lại bước 1</p>
+</div>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #E8743B;border-radius:16px;padding:32px">
+<p style="font-size:32px;font-weight:600;line-height:1.3;color:#B4501D">Phản ứng nhanh, ít thông tin</p>
+<p style="font-size:32px;line-height:1.35;color:#4A5260">Biên độ dao động lớn hơn</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #2F9E94;border-radius:16px;padding:32px">
+<p style="font-size:32px;font-weight:600;line-height:1.3;color:#1F6F68">Phản ứng chậm hơn</p>
+<p style="font-size:32px;line-height:1.35;color:#4A5260">Ổn định hơn, nhưng quá chậm thì cứng nhắc</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: Meadows, Thinking in Systems (qua bản tóm tắt, nên đối chiếu sách gốc)</p>
+
+</section>
+</div><div class="slide" id="s-delay-hpa"><section id="delay-hpa" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">02 · Delay · Ví dụ kỹ thuật</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Kubernetes HPA flapping</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:24px 32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;color:#1F6F68">01</p>
+<p style="font-size:32px;line-height:1.3">Metric vượt ngưỡng, HPA scale up</p>
+</div>
+<div style="display:flex;align-items:center;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:24px 32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;color:#1F6F68">02</p>
+<p style="font-size:32px;line-height:1.3">Tải mỗi pod giảm, kích hoạt scale down</p>
+</div>
+<div style="display:flex;align-items:center;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:24px 32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;color:#1F6F68">03</p>
+<p style="font-size:32px;line-height:1.3">Capacity giảm, tải tăng lại</p>
+</div>
+<div style="display:flex;align-items:center;gap:24px;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #E8743B;border-radius:16px;padding:24px 32px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:32px;color:#B4501D">04</p>
+<p style="font-size:32px;line-height:1.3">Lặp lại trong vài phút</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:24px;background:#14181F;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">HPA behavior</p>
+<div style="display:flex;flex-direction:column;gap:6px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#F1EEE6">behavior:</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#F1EEE6;padding:0 0 0 32px">scaleDown:</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#4FC1B5;padding:0 0 0 64px">stabilizationWindowSeconds: 300</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#F1EEE6;padding:0 0 0 32px">scaleUp:</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:28px;color:#4FC1B5;padding:0 0 0 64px">stabilizationWindowSeconds: 0</p>
+</div>
+<p style="font-size:32px;line-height:1.35;color:#B8C0CC">Cửa sổ ổn định là damping: HPA không scale xuống dưới mức khuyến nghị cao nhất trong cửa sổ.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: KEP-853 (Kubernetes); OneUptime, HPA stabilizationWindowSeconds. Giá trị là mặc định.</p>
+
+</section>
+</div><div class="slide" id="s-catalog-intro"><section id="catalog-intro" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">03 · Catalog</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Họ hàng của retry storm dùng chung một khung</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:32px">
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">1 · Trigger</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Sự kiện tạm thời</h3>
+<p style="font-size:32px;line-height:1.35;color:#4A5260">TTL hết hạn, deploy, restart, spike</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">2 · Khuếch đại</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Lỗi sinh thêm việc</h3>
+<p style="font-size:32px;line-height:1.35;color:#4A5260">Miss, retry, reconnect</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #E8743B;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B4501D">3 · Loop duy trì</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Việc thêm làm chậm thêm</h3>
+<p style="font-size:32px;line-height:1.35;color:#4A5260">Chậm sinh lỗi, lỗi sinh việc</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#14181F;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">4 · Phá loop</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2;color:#F1EEE6">Chặn khuếch đại</h3>
+<p style="font-size:32px;line-height:1.35;color:#B8C0CC">Jitter, giới hạn, shed load</p>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:24px">
+<p style="font-size:32px;font-weight:600;color:#1B2029">Ba họ hàng:</p>
+<p style="font-size:32px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:999px;padding:12px 28px">Cache stampede</p>
+<p style="font-size:32px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:999px;padding:12px 28px">Connection pool</p>
+<p style="font-size:32px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:999px;padding:12px 28px">GC và reconnect storm</p>
+</div>
+</div>
+
+</section>
+</div><div class="slide" id="s-catalog-cache"><section id="catalog-cache" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">03 · Catalog · Họ hàng 1</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Cache stampede: cả đàn cùng đập vào backend</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B4501D">Vòng lặp</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#1F6F68">1</b> · Key nóng hết TTL</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#1F6F68">2</b> · Hàng loạt request cùng miss</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#1F6F68">3</b> · Cùng recompute, đập vào backend</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#B4501D">4</b> · Backend chậm, càng nhiều miss</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#14181F;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Cách phá</p>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">TTL jitter</p>
+<p style="font-size:24px;line-height:1.3;color:#B8C0CC">Các key không hết hạn cùng lúc</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Single-flight</p>
+<p style="font-size:24px;line-height:1.3;color:#B8C0CC">Một request recompute, số còn lại chờ kết quả</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Early expiration</p>
+<p style="font-size:24px;line-height:1.3;color:#B8C0CC">Làm mới ngẫu nhiên trước khi hết hạn (XFetch)</p>
+</div>
+</div>
+</div>
+<div style="background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #2F9E94;border-radius:16px;padding:24px 32px">
+<p style="font-size:24px;line-height:1.4;color:#4A5260"><b style="color:#1B2029">Dấu hiệu:</b> tải có chu kỳ theo TTL. Ví dụ: query chạy hàng trăm lần mỗi giây với TTL 60 giây, hết hạn thì hàng chục query giống nhau cùng chạy trong vài mili giây.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: Netdata ProxySQL guide; Design Gurus; StrongDM 1/6/2024 (reconnect storm cùng cơ chế)</p>
+
+</section>
+</div><div class="slide" id="s-case-facebook"><section id="case-facebook" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">03 · Catalog · Case thật</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Facebook 2010: hệ thống tự sửa làm hỏng thêm</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;gap:32px">
+<div style="flex:3;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B4501D">Vòng lặp · 23/9/2010 · khoảng 2,5 giờ</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#1F6F68">1</b> · Ai đó đổi một giá trị config trong kho chính</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#1F6F68">2</b> · Hệ thống kiểm tra coi giá trị đó là sai, mọi client chạy đi sửa bằng cách hỏi cụm database</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#1F6F68">3</b> · Database báo lỗi, client coi lỗi là giá trị sai, xóa key cache rồi hỏi lại</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#B4501D">4</b> · Hàng trăm nghìn query mỗi giây, database không hồi phục</p>
+</div>
+<div style="flex:2;display:flex;flex-direction:column;gap:20px;background:#14181F;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Cách họ phá loop</p>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Chặn mọi traffic tới cụm</p>
+<p style="font-size:24px;line-height:1.3;color:#B8C0CC">Tức là đưa cả site ngoại tuyến</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Cho người dùng vào lại từ từ</p>
+<p style="font-size:24px;line-height:1.3;color:#B8C0CC">Sau khi database hồi phục</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Tắt hệ thống tự sửa config</p>
+<p style="font-size:24px;line-height:1.3;color:#B8C0CC">Cơ chế được viết ra để tăng độ tin cậy</p>
+</div>
+</div>
+</div>
+<div style="background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #2F9E94;border-radius:16px;padding:24px 32px">
+<p style="font-size:24px;line-height:1.4;color:#4A5260"><b style="color:#1B2029">Trigger</b> là một lần đổi config. <b style="color:#1B2029">Thứ duy trì sự cố</b> là vòng lặp lỗi database sinh thêm query. Sửa config xong vẫn chưa hết.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: Facebook Engineering, More Details on Today's Outage, 23/9/2010</p>
+
+</section>
+</div><div class="slide" id="s-catalog-pool"><section id="catalog-pool" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">03 · Catalog · Họ hàng 2</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Connection pool: nghẹt từ bên trong</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:3;display:flex;flex-direction:column;gap:16px">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #E8743B;border-radius:16px;padding:28px 36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B4501D">WorkOS · 16/7/2026</p>
+<p style="font-size:32px;line-height:1.3">Request giữ một connection để chờ connection thứ hai, retry tạo request storm</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:28px 36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">Val Town</p>
+<p style="font-size:32px;line-height:1.3">Query deadlock chiếm slot, pool không có query timeout</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:28px 36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">Gorgias</p>
+<p style="font-size:32px;line-height:1.3">Edge case timeout gây lockup, dọn backlog mất thêm khoảng 1 giờ</p>
+</div>
+</div>
+<div style="flex:2;display:flex;flex-direction:column;gap:20px;background:#14181F;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Cách phá</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">Borrow timeout ngắn</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">Query timeout</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">Giới hạn concurrency</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">Không giữ connection khi chờ connection khác</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: WorkOS; Val Town; Gorgias (postmortem công khai). Mục cuối rút ra từ case WorkOS.</p>
+
+</section>
+</div><div class="slide" id="s-catalog-gc"><section id="catalog-gc" data-transition="fade" style="background:#f4f1ea">
+  <p id="e1-1h5q90h" style="position:absolute; bottom:64px; left:128px; width:1664px; font-family:'IBM Plex Sans', Arial, sans-serif; font-size:24px; color:#5a6270">Nguồn: Netdata (vendor guide, không phải postmortem); Bluesky qua ilert, nên đọc bản gốc</p>
+  <div id="peb1d631a4bb4r0-9d2525b1" style="position:absolute; top:128px; left:128px; width:1664px; height:120px; display:flex; flex-direction:column; gap:16px">
+    <p style="font-family:'JetBrains Mono', 'Courier New', monospace; font-size:24px; letter-spacing:2px; text-transform:uppercase; color:#b4501d">03 · Catalog · Họ hàng 3</p>
+    <h2 style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:64px; font-weight:600; line-height:1.1; color:#1b2029">GC death spiral và reconnect storm</h2>
+  </div>
+  <div id="peb1d631a4bb4r1-9d2525b1" style="position:absolute; top:304px; left:128px; width:1664px; height:616px; display:flex; flex-direction:column; gap:24px">
+    <div style="display:flex; flex-direction:row; gap:32px">
+      <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:36px; background:#fbfaf6; border:1px solid #ddd8cb; border-radius:16px">
+        <p style="font-family:'JetBrains Mono', 'Courier New', monospace; font-size:24px; color:#1f6f68">GC death spiral</p>
+        <h3 style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:40px; font-weight:600; line-height:1.2; color:#1b2029">Cassandra</h3>
+        <ul style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:32px; line-height:1.35; color:#4a5260">
+          <li>Heap bị ép, pause dài</li>
+          <li>Node bị đánh dấu DOWN</li>
+          <li>Retry thêm áp lực, pause dày dần</li>
+        </ul>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:36px; background:#fbfaf6; border:1px solid #ddd8cb; border-radius:16px">
+        <p style="font-family:'JetBrains Mono', 'Courier New', monospace; font-size:24px; color:#1f6f68">Thiếu concurrency limit</p>
+        <h3 style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:40px; font-weight:600; line-height:1.2; color:#1b2029">Bluesky, 4/2026</h3>
+        <ul style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:32px; line-height:1.35; color:#4a5260">
+          <li>Handler RPC không giới hạn concurrency</li>
+          <li>Cạn port, log nghẽn</li>
+          <li>AppView crash lặp</li>
+        </ul>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:36px; background:#fbfaf6; border:1px solid #ddd8cb; border-radius:16px">
+        <p style="font-family:'JetBrains Mono', 'Courier New', monospace; font-size:24px; color:#b4501d">Reconnect storm</p>
+        <h3 style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:40px; font-weight:600; line-height:1.2; color:#1b2029">MongoDB, CockroachDB</h3>
+        <ul style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:32px; line-height:1.35; color:#4a5260">
+          <li>Election hoặc failover</li>
+          <li>Mọi driver reconnect cùng lúc</li>
+          <li>Retry không jitter giữ client đồng bộ</li>
+        </ul>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:column; padding:24px 36px; background:#14181f; border-radius:16px">
+      <p style="font-family:'IBM Plex Sans', Arial, sans-serif; font-size:32px; line-height:1.3; color:#f1eee6"><span style="color:#4fc1b5"><b>Phá loop:</b></span> backoff + jitter, concurrency limit, log không chặn luồng chính</p>
+    </div>
+  </div>
+  
+</section>
+</div><div class="slide" id="s-meta-states"><section id="meta-states" data-transition="fade" style="background:#14181F;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">04 · Metastable</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Ba trạng thái của một hệ thống</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:32px">
+<div style="display:flex;align-items:stretch;gap:16px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-left:8px solid #2F9E94;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Stable</p>
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6">Tải thấp. Tự hồi phục sau overload tạm thời.</p>
+</div>
+<div style="width:56px;height:40px;background:#9AA4B2;align-self:center;clip-path:polygon(0 35%,60% 35%,60% 0,100% 50%,60% 100%,60% 65%,0 65%);flex:none"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-left:8px solid #9AA4B2;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B8C0CC">Vulnerable</p>
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6">Tải cao. Ổn nếu không có overload tạm thời. Phần lớn production nằm ở đây.</p>
+</div>
+<div style="width:56px;height:40px;background:#9AA4B2;align-self:center;clip-path:polygon(0 35%,60% 35%,60% 0,100% 50%,60% 100%,60% 65%,0 65%);flex:none"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-left:8px solid #E8743B;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#E8743B">Metastable</p>
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6">Overload tự duy trì sau khi trigger đã hết. Throughput còn, goodput gần 0.</p>
+</div>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;border-top:2px solid #2E3744;padding:20px 0 0 0">
+<p style="font-size:24px;line-height:1.4;color:#B8C0CC"><b style="color:#F1EEE6">Trigger:</b> sự kiện tạm thời gây overload, ví dụ spike, deploy lỗi, cache bị xóa</p>
+</div>
+<div style="flex:1;border-top:2px solid #2E3744;padding:20px 0 0 0">
+<p style="font-size:24px;line-height:1.4;color:#B8C0CC"><b style="color:#F1EEE6">Sustaining effect:</b> cơ chế khuếch đại việc, ví dụ retry, giữ hệ thống chết khi trigger đã hết</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#9AA4B2">Nguồn: Bronson et al., Metastable Failures in Distributed Systems, HotOS 2021</p>
+
+</section>
+</div><div class="slide" id="s-case-aws"><section id="case-aws" data-transition="fade" style="background:#14181F;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">04 · Metastable · Case thật</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">AWS DynamoDB 2015: không thể thêm capacity</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:32px">
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Trigger</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#F1EEE6">2:19</p>
+<p style="font-size:32px;line-height:1.3;color:#B8C0CC">Sự cố mạng ngắn. Server hỏi lại metadata service, danh sách quá lớn nên chậm</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-left:8px solid #E8743B;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#E8743B">Sustaining effect</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#E8743B">55%</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">Tỉ lệ lỗi của khách hàng. Retry giữ metadata service quá tải</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-left:8px solid #2F9E94;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Phá loop</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#4FC1B5">5:06</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">Tạm dừng request tới metadata service. Chỉ khi đó mới thêm được capacity</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Hồi phục</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#F1EEE6">7:10</p>
+<p style="font-size:32px;line-height:1.3;color:#B8C0CC">Tỉ lệ lỗi đủ thấp cho đa số khách hàng, gần năm tiếng sau khi bắt đầu</p>
+</div>
+</div>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">Không thêm được capacity vì dịch vụ quá tải đến mức không nhận nổi cả request quản trị. Cách phá loop: cắt tải, không thêm tải.</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#9AA4B2">Nguồn: AWS, Summary of the Amazon DynamoDB Service Disruption, 20/9/2015, giờ PDT (aws.amazon.com/message/5467D2)</p>
+
+</section>
+</div><div class="slide" id="s-meta-numbers"><section id="meta-numbers" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">04 · Metastable · Ngoài đời thật</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Metastable không hiếm</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#1F6F68">22</p>
+<p style="font-size:32px;line-height:1.3;color:#4A5260">failure metastable từ 11 tổ chức (OSDI 2022)</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#1F6F68">4/15</p>
+<p style="font-size:32px;line-height:1.3;color:#4A5260">outage lớn của AWS thập kỷ qua, ít nhất, là metastable</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:16px;background:#14181F;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#E8743B">&gt;50%</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">sustaining effect là tải tăng do retry (theo slide của tác giả)</p>
+</div>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #2F9E94;border-radius:16px;padding:24px 32px">
+<p style="font-size:24px;line-height:1.4;color:#4A5260"><b style="color:#1B2029">Khoảng 45% trigger</b> là lỗi của kỹ sư: config sai, deploy lỗi, bug tiềm ẩn</p>
+</div>
+<div style="flex:1;background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #2F9E94;border-radius:16px;padding:24px 32px">
+<p style="font-size:24px;line-height:1.4;color:#4A5260"><b style="color:#1B2029">Khoảng 35% trigger</b> là load spike. Nhiều case có nhiều trigger cùng lúc</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: Metastable Failures in the Wild (OSDI 2022). Tỷ lệ phần trăm lấy từ slide tác giả, cần đối chiếu paper.</p>
+
+</section>
+</div><div class="slide" id="s-meta-example"><section id="meta-example" data-transition="fade" style="background:#14181F;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">04 · Metastable · Ví dụ</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Retry storm bằng con số</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:32px">
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Bước 1</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#F1EEE6">80</p>
+<p style="font-size:32px;line-height:1.3;color:#B8C0CC">req/s bình thường. Capacity 100: vẫn ổn</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Bước 2</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#F1EEE6">5s</p>
+<p style="font-size:32px;line-height:1.3;color:#B8C0CC">DB chậm, request timeout. Đây là trigger</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Bước 3</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#F1EEE6">160</p>
+<p style="font-size:32px;line-height:1.3;color:#B8C0CC">req/s: 80 mới cộng 80 retry, vượt capacity</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-left:8px solid #E8743B;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#E8743B">Bước 4</p>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:120px;font-weight:500;line-height:1.05;color:#E8743B">≈ 0</p>
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">goodput. Trigger đã hết nhưng loop vẫn quay</p>
+</div>
+</div>
+<p style="font-size:40px;line-height:1.3;color:#F1EEE6">Restart cũng không giúp: client vẫn đang retry, tải ập vào ngay.</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#9AA4B2">Ví dụ minh họa với số giả định, không phải số đo thực.</p>
+
+</section>
+</div><div class="slide" id="s-meta-cld"><section id="meta-cld" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">04 · Metastable · Causal loop diagram</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Vẽ loop trước khi chữa</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:24px">
+<div style="display:flex;align-items:center;gap:12px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:28px 32px">
+<div style="width:300px;display:flex;flex-direction:column;gap:8px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B4501D">R · Reinforcing</p>
+<p style="font-size:24px;line-height:1.35;color:#4A5260">Tự khuếch đại. Load tăng làm latency tăng tiếp</p>
+</div>
+<div style="flex:1;background:#F4F1EA;border:2px solid #E8743B;border-radius:12px;padding:20px 16px">
+<p style="font-size:32px;font-weight:600;line-height:1.2;text-align:center">Latency ↑</p>
+</div>
+<div style="width:40px;height:32px;background:#5A6270;clip-path:polygon(0 35%,60% 35%,60% 0,100% 50%,60% 100%,60% 65%,0 65%);flex:none"></div>
+<div style="flex:1;background:#F4F1EA;border:2px solid #E8743B;border-radius:12px;padding:20px 16px">
+<p style="font-size:32px;font-weight:600;line-height:1.2;text-align:center">Timeout ↑</p>
+</div>
+<div style="width:40px;height:32px;background:#5A6270;clip-path:polygon(0 35%,60% 35%,60% 0,100% 50%,60% 100%,60% 65%,0 65%);flex:none"></div>
+<div style="flex:1;background:#F4F1EA;border:2px solid #E8743B;border-radius:12px;padding:20px 16px">
+<p style="font-size:32px;font-weight:600;line-height:1.2;text-align:center">Retry ↑</p>
+</div>
+<div style="width:40px;height:32px;background:#5A6270;clip-path:polygon(0 35%,60% 35%,60% 0,100% 50%,60% 100%,60% 65%,0 65%);flex:none"></div>
+<div style="flex:1;background:#F4F1EA;border:2px solid #E8743B;border-radius:12px;padding:20px 16px">
+<p style="font-size:32px;font-weight:600;line-height:1.2;text-align:center">Load ↑</p>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:12px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:28px 32px">
+<div style="width:300px;display:flex;flex-direction:column;gap:8px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">B · Balancing</p>
+<p style="font-size:24px;line-height:1.35;color:#4A5260">Tự kéo về. Load tăng thì shed request</p>
+</div>
+<div style="flex:1;background:#F4F1EA;border:2px solid #2F9E94;border-radius:12px;padding:20px 16px">
+<p style="font-size:32px;font-weight:600;line-height:1.2;text-align:center">Load ↑</p>
+</div>
+<div style="width:40px;height:32px;background:#5A6270;clip-path:polygon(0 35%,60% 35%,60% 0,100% 50%,60% 100%,60% 65%,0 65%);flex:none"></div>
+<div style="flex:1;background:#F4F1EA;border:2px solid #2F9E94;border-radius:12px;padding:20px 16px">
+<p style="font-size:32px;font-weight:600;line-height:1.2;text-align:center">Request bị shed ↑</p>
+</div>
+<div style="width:40px;height:32px;background:#5A6270;clip-path:polygon(0 35%,60% 35%,60% 0,100% 50%,60% 100%,60% 65%,0 65%);flex:none"></div>
+<div style="flex:1;background:#F4F1EA;border:2px solid #2F9E94;border-radius:12px;padding:20px 16px">
+<p style="font-size:32px;font-weight:600;line-height:1.2;text-align:center">Load ↓</p>
+</div>
+<div style="flex:1;border:2px dashed #5A6270;border-radius:12px;padding:20px 16px">
+<p style="font-size:24px;line-height:1.3;color:#4A5260;text-align:center">Phải đủ mạnh để thắng loop R</p>
+</div>
+</div>
+<div style="background:#14181F;border-radius:16px;padding:28px 36px">
+<p style="font-size:32px;line-height:1.3;color:#F1EEE6">Chữa bệnh là thêm một balancing loop đủ mạnh để thắng reinforcing loop.</p>
+</div>
+</div>
+
+</section>
+</div><div class="slide" id="s-break-loop"><section id="break-loop" data-transition="fade" style="background:#14181F;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">Phá loop</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Đừng để tải tự tăng khi lỗi</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:32px">
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">1</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Giảm tải khi lỗi</h3>
+<p style="font-size:32px;line-height:1.35;color:#B8C0CC">Load shedding, retry budget, bounded queue</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">2</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Giới hạn mọi thứ</h3>
+<p style="font-size:32px;line-height:1.35;color:#B8C0CC">Retry, queue, concurrency, connection</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">3</p>
+<h3 style="font-size:40px;font-weight:600;line-height:1.2">Jitter mọi thứ</h3>
+<p style="font-size:32px;line-height:1.35;color:#B8C0CC">Backoff, TTL, reconnect</p>
+</div>
+</div>
+<div style="background:#1F2630;border:1px solid #2E3744;border-left:8px solid #E8743B;border-radius:16px;padding:28px 36px">
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6"><b style="color:#E8743B">Cẩn thận:</b> mỗi công cụ là một balancing loop mới. Tune sai thì chính nó thành trigger, như circuit breaker cấu hình sai ở DoorDash cắt traffic giữa nhiều service không liên quan.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#9AA4B2">Nguồn: DoorDash Engineering; Metastability in Recovery (SREcon26)</p>
+
+</section>
+</div><div class="slide" id="s-takeaways"><section id="takeaways" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">Chốt lại</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Bốn điều mang về</h2>
+</div>
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:32px">
+<div style="display:flex;flex-direction:column;justify-content:center;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px 44px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">01</p>
+<p style="font-size:32px;line-height:1.35">Hỏi "cái gì đang duy trì outage", đừng chỉ hỏi "cái gì gây ra nó".</p>
+</div>
+<div style="display:flex;flex-direction:column;justify-content:center;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px 44px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">02</p>
+<p style="font-size:32px;line-height:1.35">Retry là load. Tính nó vào capacity.</p>
+</div>
+<div style="display:flex;flex-direction:column;justify-content:center;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px 44px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">03</p>
+<p style="font-size:32px;line-height:1.35">Hệ thống tối ưu cho common case thường là hệ thống vulnerable.</p>
+</div>
+<div style="display:flex;flex-direction:column;justify-content:center;gap:16px;background:#14181F;border-radius:16px;padding:36px 44px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#E8743B">04</p>
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6">Recovery cũng cần được thiết kế, test và có giới hạn.</p>
+</div>
+</div>
+
+</section>
+</div><div class="slide" id="s-bridge"><section id="bridge" data-transition="fade" style="background:#14181F;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;justify-content:space-between">
+<div style="position:absolute;left:1360px;top:128px;width:320px;height:320px;border:10px solid #E8743B;border-radius:50%;opacity:0.9"></div>
+<div style="position:absolute;left:1440px;top:208px;width:160px;height:160px;border:10px solid #2F9E94;border-radius:50%;opacity:0.9"></div>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">Cầu sang Session B</p>
+<div style="display:flex;flex-direction:column;gap:32px">
+<h1 style="font-size:120px;font-weight:600;line-height:1.05">Retry policy này do ai viết, và KPI nào ép họ?</h1>
+<p style="font-size:40px;line-height:1.3;color:#B8C0CC;width:1300px">Cùng một loop, nhìn ở tầng con người và tổ chức.</p>
+</div>
+<p style="font-size:24px;color:#9AA4B2">Session B · Sociotechnical loops</p>
+
+</section>
+</div><div class="slide" id="s-sources"><section id="sources" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">Tài liệu</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Nguồn tham khảo</h2>
+</div>
+<div style="flex:1;display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px 44px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">Queue và Delay</p>
+<p style="font-size:24px;line-height:1.4"><a href="https://www.usenix.net/system/files/srecon24americas_slides-poole.pdf">Queues and You (SREcon24)</a></p>
+<p style="font-size:24px;line-height:1.4"><a href="https://third-bit.com/2026/06/01/nonlinearity/">Queue Nonlinearity</a></p>
+<p style="font-size:24px;line-height:1.4"><a href="https://dev.to/kirilllatish/average-latency-is-lying-to-you-littles-law-in-production-4jh1">Little's Law in production</a></p>
+<p style="font-size:24px;line-height:1.4"><a href="https://sloww.co/thinking-in-systems-book">Thinking in Systems (bản tóm tắt)</a></p>
+<p style="font-size:24px;line-height:1.4"><a href="https://oneuptime.com/blog/post/2026-02-09-hpa-stabilization-window-prevent-thrashing/markdown">HPA stabilization window</a></p>
+<p style="font-size:24px;line-height:1.4"><a href="https://www.kubernetes.dev/resources/keps/853/">KEP-853: HPA scale velocity</a></p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:36px 44px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#1F6F68">Catalog và Metastable</p>
+<p style="font-size:24px;line-height:1.4"><a href="https://pure.psu.edu/en/publications/metastable-failures-in-distributed-systems/">Metastable Failures in Distributed Systems (HotOS 2021)</a></p>
+<p style="font-size:24px;line-height:1.4"><a href="https://www.usenix.org/conference/osdi22/presentation/huang-lexiang">Metastable Failures in the Wild (OSDI 2022)</a></p>
+<p style="font-size:24px;line-height:1.4"><a href="https://www.usenix.org/conference/srecon26americas/presentation/porter">Metastability in Recovery (SREcon26)</a></p>
+<p style="font-size:24px;line-height:1.4"><a href="https://careers.doordash.com/?p=9335">DoorDash Engineering</a></p>
+<p style="font-size:24px;line-height:1.4"><a href="https://workos.com/blog/service-disruption-on-july-16-2026">WorkOS, 16/7/2026</a></p>
+<p style="font-size:24px;line-height:1.4"><a href="https://engineering.fb.com/2010/09/23/uncategorized/more-details-on-today-s-outage/">Facebook, 23/9/2010</a> · <a href="https://aws.amazon.com/message/5467D2">AWS DynamoDB, 20/9/2015</a></p>
+<p style="font-size:24px;line-height:1.4"><a href="https://blog.val.town/blog/post-mortem-exhausted-host-connection-pool">Val Town</a> · <a href="https://status.gorgias.com/incidents/qjy6753qqmj1">Gorgias</a> · <a href="https://status.strongdm.com/incidents/6ths1gg4xsqz">StrongDM</a></p>
+<p style="font-size:24px;line-height:1.4"><a href="https://www.ilert.com/postmortems/bluesky-missing-concurrency-limits-death-spiral-outage-apr-2026">Bluesky, 4/2026 (qua ilert)</a></p>
+</div>
+</div>
+
+</section>
+</div></div></div></div><div class="bar"><span>← → hoặc Space: chuyển slide · F: toàn màn hình</span><span class="grow"></span><button id="prev">‹</button><span id="counter"></span><button id="next">›</button><button id="fs">Toàn màn hình</button><div class="prog"><i></i></div></div></div><script>
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var scripts=[].slice.call(document.querySelectorAll('.script-item'));
+  var docs=[].slice.call(document.querySelectorAll('.doc'));
+  var stagewrap=document.querySelector('.stagewrap');
+  var stage=document.querySelector('.stage');
+  var scriptBox=document.querySelector('.script');
+  var counter=document.getElementById('counter');
+  var prog=document.querySelector('.prog i');
+  var total=slides.length+docs.length;
+  var i=0;
+  try{var h=parseInt((location.hash||'').slice(1),10);if(h>=1&&h<=total)i=h-1;}catch(e){}
+  function fit(){
+    var w=stagewrap.clientWidth-32,h=stagewrap.clientHeight-32;
+    var s=Math.min(w/1920,h/1080);if(s<=0)return;
+    stage.style.width=1920*s+'px';stage.style.height=1080*s+'px';
+    slides.forEach(function(el){el.style.transform='scale('+s+')';});
+  }
+  function show(n){
+    i=Math.max(0,Math.min(total-1,n));
+    var isDoc=i>=slides.length;
+    slides.forEach(function(el,k){el.classList.toggle('on',k===i);});
+    scripts.forEach(function(el,k){el.style.display=(k===i)?'block':'none';});
+    docs.forEach(function(el,k){el.style.display=(slides.length+k===i)?'block':'none';});
+    stagewrap.style.display=isDoc?'none':'flex';
+    if(scriptBox){scriptBox.style.display=isDoc?'none':'block';scriptBox.scrollTop=0;}
+    counter.textContent=(i+1)+' / '+total;
+    prog.style.width=((i+1)/total*100)+'%';
+    try{history.replaceState(null,'','#'+(i+1));}catch(e){}
+    fit();
+  }
+  function next(){show(i+1)}function prev(){show(i-1)}
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();next();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev();}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(total-1);
+    else if(e.key==='f'||e.key==='F')toggleFs();
+    else if((e.key==='s'||e.key==='S')&&scriptBox){scriptBox.style.display=(scriptBox.style.display==='none')?'block':'none';fit();}
+  });
+  stagewrap.addEventListener('click',function(e){var r=stagewrap.getBoundingClientRect();(e.clientX-r.left>r.width/2)?next():prev();});
+  var tx=null;stagewrap.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;},{passive:true});
+  stagewrap.addEventListener('touchend',function(e){if(tx===null)return;var d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>50)(d<0?next():prev());tx=null;});
+  function toggleFs(){if(!document.fullscreenElement)document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();else document.exitFullscreen();}
+  document.getElementById('prev').onclick=prev;document.getElementById('next').onclick=next;document.getElementById('fs').onclick=toggleFs;
+  var ts=document.getElementById('ts');if(ts)ts.onclick=function(){scriptBox.style.display=(scriptBox.style.display==='none')?'block':'none';fit();};
+  window.addEventListener('resize',fit);
+  show(i);
+})();
+</script></body></html>

@@ -1,0 +1,37 @@
+<section id="catalog-cache" data-transition="fade" style="background:#F4F1EA;color:#1B2029;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#B4501D">03 · Catalog · Họ hàng 1</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Cache stampede: cả đàn cùng đập vào backend</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFAF6;border:1px solid #DDD8CB;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B4501D">Vòng lặp</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#1F6F68">1</b> · Key nóng hết TTL</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#1F6F68">2</b> · Hàng loạt request cùng miss</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#1F6F68">3</b> · Cùng recompute, đập vào backend</p>
+<p style="font-size:32px;line-height:1.3"><b style="color:#B4501D">4</b> · Backend chậm, càng nhiều miss</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#14181F;border-radius:16px;padding:48px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Cách phá</p>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">TTL jitter</p>
+<p style="font-size:24px;line-height:1.3;color:#B8C0CC">Các key không hết hạn cùng lúc</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Single-flight</p>
+<p style="font-size:24px;line-height:1.3;color:#B8C0CC">Một request recompute, số còn lại chờ kết quả</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<p style="font-size:32px;font-weight:600;color:#F1EEE6">Early expiration</p>
+<p style="font-size:24px;line-height:1.3;color:#B8C0CC">Làm mới ngẫu nhiên trước khi hết hạn (XFetch)</p>
+</div>
+</div>
+</div>
+<div style="background:#FBFAF6;border:1px solid #DDD8CB;border-left:8px solid #2F9E94;border-radius:16px;padding:24px 32px">
+<p style="font-size:24px;line-height:1.4;color:#4A5260"><b style="color:#1B2029">Dấu hiệu:</b> tải có chu kỳ theo TTL. Ví dụ: query chạy hàng trăm lần mỗi giây với TTL 60 giây, hết hạn thì hàng chục query giống nhau cùng chạy trong vài mili giây.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#5A6270">Nguồn: Netdata ProxySQL guide; Design Gurus; StrongDM 1/6/2024 (reconnect storm cùng cơ chế)</p>
+<aside>Họ hàng 1. Mẹo nhận diện: nhìn đồ thị tải, nếu có đỉnh đều đặn theo chu kỳ TTL thì nghi stampede. Case thật gần nhất: StrongDM 1/6/2024, sau khi nâng cấp DB, khách hàng reconnect ồ ạt gây thundering herd; rollback xong dịch vụ vẫn chậm một lúc. Đây là reconnect storm chứ không phải cache expiry cổ điển, nhưng cơ chế như nhau. Lưu ý trung thực: tôi chưa tìm được postmortem cache stampede nổi tiếng của công ty lớn.</aside>
+</section>

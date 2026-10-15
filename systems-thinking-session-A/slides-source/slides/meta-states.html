@@ -1,0 +1,34 @@
+<section id="meta-states" data-transition="fade" style="background:#14181F;color:#F1EEE6;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;letter-spacing:2px;text-transform:uppercase;color:#E8743B">04 · Metastable</p>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Ba trạng thái của một hệ thống</h2>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:32px">
+<div style="display:flex;align-items:stretch;gap:16px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-left:8px solid #2F9E94;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#4FC1B5">Stable</p>
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6">Tải thấp. Tự hồi phục sau overload tạm thời.</p>
+</div>
+<x-shape kind="arrow-right" style="width:56px;height:40px;background:#9AA4B2;align-self:center"></x-shape>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-left:8px solid #9AA4B2;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#B8C0CC">Vulnerable</p>
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6">Tải cao. Ổn nếu không có overload tạm thời. Phần lớn production nằm ở đây.</p>
+</div>
+<x-shape kind="arrow-right" style="width:56px;height:40px;background:#9AA4B2;align-self:center"></x-shape>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#1F2630;border:1px solid #2E3744;border-left:8px solid #E8743B;border-radius:16px;padding:36px">
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:24px;color:#E8743B">Metastable</p>
+<p style="font-size:32px;line-height:1.35;color:#F1EEE6">Overload tự duy trì sau khi trigger đã hết. Throughput còn, goodput gần 0.</p>
+</div>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;border-top:2px solid #2E3744;padding:20px 0 0 0">
+<p style="font-size:24px;line-height:1.4;color:#B8C0CC"><b style="color:#F1EEE6">Trigger:</b> sự kiện tạm thời gây overload, ví dụ spike, deploy lỗi, cache bị xóa</p>
+</div>
+<div style="flex:1;border-top:2px solid #2E3744;padding:20px 0 0 0">
+<p style="font-size:24px;line-height:1.4;color:#B8C0CC"><b style="color:#F1EEE6">Sustaining effect:</b> cơ chế khuếch đại việc, ví dụ retry, giữ hệ thống chết khi trigger đã hết</p>
+</div>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#9AA4B2">Nguồn: Bronson et al., Metastable Failures in Distributed Systems, HotOS 2021</p>
+<aside>Cao trào. Nhấn mạnh: root cause truyền thống (trigger) và nguyên nhân duy trì outage (sustaining effect) là hai thứ khác nhau; postmortem hay dừng ở trigger. Hệ thống vulnerable là hệ thống chạy gần ngưỡng nhờ tối ưu common case, ví dụ cache che đi tải thật. Mọi thứ ở các phần trước hội tụ ở đây: queue (vulnerable), delay (loop), catalog (sustaining effect).</aside>
+</section>
